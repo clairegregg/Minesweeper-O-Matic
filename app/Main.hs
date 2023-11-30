@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Lib
+import Model
 
 main :: IO ()
-main = someFunc
+main = print (emptyMap 3 3)

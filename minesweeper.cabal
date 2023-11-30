@@ -25,7 +25,7 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Model
   other-modules:
       Paths_minesweeper
   autogen-modules:
