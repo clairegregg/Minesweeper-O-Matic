@@ -14,6 +14,7 @@ stack exec minesweeper
 ```
 
 ## Original Assignment Description
+(Provided by Glenn Strong)
 The final project for CS4012 requires you to build an auto-playing implementation of the game minesweeper; use Threepenny to build the user interface and provide as complete an automatic player as you can.
 
 Rules of Minesweeper:
