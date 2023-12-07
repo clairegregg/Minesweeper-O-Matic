@@ -35,6 +35,8 @@ ghc-options:
 
 library:
   source-dirs: src
+  dependencies:
+    - random
 
 executables:
   minesweeper:
@@ -46,6 +48,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - minesweeper
+    - random
 
 tests:
   minesweeper-test:
