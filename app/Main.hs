@@ -1,6 +1,8 @@
 module Main (main) where
 
-import Lib
+
+import Model
+import System.Random
 
 main :: IO ()
-main = someFunc
+main = print $ newMap 10 10 (mkStdGen 42)
