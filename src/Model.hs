@@ -1,6 +1,6 @@
 module Model
     (
-        Square, Map, newMap
+        Square, Map, newMap, flagSquare
     ) where
 
 import System.Random ( Random(randomRs), StdGen )
@@ -9,6 +9,36 @@ data Contents = Mine | Empty Int deriving Show
 data Square = Unflipped Contents | Revealed Contents | Flagged Contents deriving Show
 type Map = [[Square]]
 
+{- INTERACTION WITH MODEL -}
+-- Takes in the map and coordinates of a square, and flags it
+flagSquare :: Map -> (Int, Int) -> Map
+flagSquare m (x,y) = replaceSquare m (changedSquare (getSquare m (x,y))) (x,y)
+                        where 
+                            changedSquare :: Square -> Square
+                            changedSquare (Unflipped c) = Flagged c -- If the square is currently unflipped, flag it
+                            changedSquare (Flagged c) = Unflipped c -- If the square is currently flagged, unflag it (unflipped)
+                            changedSquare (Revealed c) = Revealed c -- If the square has already been flagged, do nothing
+
+{- HELPER FUNCTIONS -}
+-- Get square at coordinates. Not safe!
+getSquare :: Map -> (Int, Int) -> Square
+getSquare m (x,y) = (m !! y) !! x
+
+-- Get square contents. Not safe!
+getSquareContents :: Map -> (Int, Int) -> Contents
+getSquareContents m (x,y) = case getSquare m (x,y) of
+                                Unflipped c -> c
+                                Revealed c -> c
+                                Flagged c -> c
+
+-- Take in a map, a new square, and coordinates, and replace the square at the coordinates with the new square
+replaceSquare ::  Map -> Square ->  (Int, Int) -> Map
+replaceSquare m s (x,y) = let (preRow, row:postRow) = splitAt y m -- Splits the map into the rows before and after the row containing the intended square
+                              (preSq, _:postSq) = splitAt x row -- Splits the row into the squares before and after s, discarding the existing value
+                              row' = (preSq ++ [s]) ++ postSq -- Sets the value of row' to include s in the correct location
+                          in (preRow ++ [row']) ++ postRow -- Return the map with row' in location
+
+{-- SETUP --}
 -- Generate a map of size w * h
 emptyMap :: Int -> Int -> Map
 emptyMap w h = replicate h (replicate w (Unflipped (Empty 0)))
@@ -27,26 +57,6 @@ bombPositions w h gen = take (numBombs w h) (indexToXY (randomRs (0, w*h) gen))
 -- Take in the width and height, and return how many bombs should be placed
 numBombs :: Int -> Int -> Int
 numBombs w h = floor ((fromIntegral (w*h) * 0.13) :: Double)
-
--- Get square at coordinates. Not safe!
-getSquare :: Map -> (Int, Int) -> Square
-getSquare m (x,y) = (m !! y) !! x
-
--- Get square contents. Not safe!
-getSquareContents :: Map -> (Int, Int) -> Contents
-getSquareContents m (x,y) = case getSquare m (x,y) of
-                                Unflipped c -> c
-                                Revealed c -> c
-                                Flagged c -> c
-
-
-
--- Take in a map, a new square, and coordinates, and replace the square at the coordinates with the new square
-replaceSquare ::  Map -> Square ->  (Int, Int) -> Map
-replaceSquare m s (x,y) = let (preRow, row:postRow) = splitAt y m -- Splits the map into the rows before and after the row containing the intended square
-                              (preSq, _:postSq) = splitAt x row -- Splits the row into the squares before and after s, discarding the existing value
-                              row' = (preSq ++ [s]) ++ postSq -- Sets the value of row' to include s in the correct location
-                          in (preRow ++ [row']) ++ postRow -- Return the map with row' in location
 
 -- Given a list of coordinates surrounding a bomb, increment the bomb count on each of them.
 -- Skip if it's another mine.
