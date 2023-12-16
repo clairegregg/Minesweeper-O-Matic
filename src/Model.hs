@@ -1,19 +1,21 @@
 module Model
     (
-        Square, Map, newMap, flagSquare
+        Square, Map, Game, newGame, flagSquare
     ) where
 
 import System.Random ( Random(randomRs), StdGen )
 
 data Contents = Mine | Empty Int deriving Show
 data Square = Unflipped Contents | Revealed Contents | Flagged Contents deriving Show
+data GameState = Play | Lost | Won
 type Map = [[Square]]
+type Game = (Map, GameState)
 
-{- INTERACTION WITH MODEL -}
+{- INTERACTION WITH GAME -}
 -- Takes in the map and coordinates of a square, and flags it
-flagSquare :: Map -> (Int, Int) -> Map
-flagSquare m (x,y) = replaceSquare m (changedSquare (getSquare m (x,y))) (x,y)
-                        where 
+flagSquare :: Game -> (Int, Int) -> Game
+flagSquare (m,g) (x,y) = (replaceSquare m (changedSquare (getSquare m (x,y))) (x,y), g)
+                         where 
                             changedSquare :: Square -> Square
                             changedSquare (Unflipped c) = Flagged c -- If the square is currently unflipped, flag it
                             changedSquare (Flagged c) = Unflipped c -- If the square is currently flagged, unflag it (unflipped)
@@ -90,3 +92,7 @@ placeBombs m (b:bs) dimens = placeBombs m'' bs dimens
 -- Generate a new map of the given width and height
 newMap :: Int -> Int -> StdGen -> Map
 newMap w h g = placeBombs (emptyMap w h) (bombPositions w h g) (w,h)
+
+-- Generate a new game
+newGame :: Int -> Int -> StdGen -> Game 
+newGame w h g = (newMap w h g, Play)
