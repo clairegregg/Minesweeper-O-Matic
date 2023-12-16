@@ -5,12 +5,13 @@ module Model
 
 import System.Random ( Random(randomRs), StdGen )
 
-data Square = Mine | Empty Int deriving Show
+data Contents = Mine | Empty Int deriving Show
+data Square = Unflipped Contents | Revealed Contents | Flagged Contents deriving Show
 type Map = [[Square]]
 
 -- Generate a map of size w * h
 emptyMap :: Int -> Int -> Map
-emptyMap w h = replicate h (replicate w (Empty 0))
+emptyMap w h = replicate h (replicate w (Unflipped (Empty 0)))
 
 -- Taking in width, height, and a random generator, generate a list of positions for bombs/mines
 bombPositions :: Int -> Int -> StdGen -> [(Int,Int)]
@@ -31,6 +32,15 @@ numBombs w h = floor ((fromIntegral (w*h) * 0.13) :: Double)
 getSquare :: Map -> (Int, Int) -> Square
 getSquare m (x,y) = (m !! y) !! x
 
+-- Get square contents. Not safe!
+getSquareContents :: Map -> (Int, Int) -> Contents
+getSquareContents m (x,y) = case getSquare m (x,y) of
+                                Unflipped c -> c
+                                Revealed c -> c
+                                Flagged c -> c
+
+
+
 -- Take in a map, a new square, and coordinates, and replace the square at the coordinates with the new square
 replaceSquare ::  Map -> Square ->  (Int, Int) -> Map
 replaceSquare m s (x,y) = let (preRow, row:postRow) = splitAt y m -- Splits the map into the rows before and after the row containing the intended square
@@ -42,11 +52,11 @@ replaceSquare m s (x,y) = let (preRow, row:postRow) = splitAt y m -- Splits the 
 -- Skip if it's another mine.
 updateBombCounts :: Map -> [(Int, Int)] -> Map
 updateBombCounts m [] = m
-updateBombCounts m (c:cs) = case getSquare m c of
+updateBombCounts m (c:cs) = case getSquareContents m c of
                                 Mine -> updateBombCounts m cs
                                 (Empty x) -> updateBombCounts m' cs
                                     where
-                                        m' = replaceSquare m (Empty (x+1)) c
+                                        m' = replaceSquare m (Unflipped (Empty (x+1))) c
 
 -- Given the coordinates of a bomb, increment all valid surrounding coordinates (in all directions, including diagonal)
 nextToBomb :: Map -> (Int, Int) -> (Int,Int) -> Map
@@ -64,7 +74,7 @@ nextToBomb m (x,y) (w,h) = updateBombCounts m [(x',y') | x' <- xs, y' <- ys]
 placeBombs :: Map -> [(Int, Int)] -> (Int,Int) -> Map
 placeBombs m [] _ = m
 placeBombs m (b:bs) dimens = placeBombs m'' bs dimens
-                            where m' = replaceSquare m Mine b
+                            where m' = replaceSquare m (Unflipped Mine) b
                                   m'' = nextToBomb m' b dimens
 
 -- Generate a new map of the given width and height
