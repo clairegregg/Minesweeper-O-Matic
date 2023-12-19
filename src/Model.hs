@@ -21,47 +21,49 @@ flagSquare (x,y) (m,g) = (replaceSquare m (changedSquare (getSquare m (x,y))) (x
                             changedSquare (Flagged c) = Unflipped c -- If the square is currently flagged, unflag it (unflipped)
                             changedSquare (Revealed c) = Revealed c -- If the square has already been flagged, do nothing
 
+-- Flips a square at the given coordinates. This function also checks the win condition after the square has been flipped.
 flipSquare ::  (Int,Int) -> Game -> Game
-flipSquare (x,y) (m,g) = (m', checkFlipGameCondition (m',g) (x,y))
+flipSquare (x,y) (m,g) = (m', checkFlipGameCondition (m',g) (x,y)) -- return the new map (with flipped square), and the new game condition
                         where
+                            -- Calculate the map with the given square flipped.
                             m' = replaceSquare m (changedSquare (getSquare m (x,y))) (x,y)
 
+                            -- What should happen to each type of square?
                             changedSquare :: Square -> Square
                             changedSquare (Unflipped c) = Revealed c
                             changedSquare (Flagged c) = Flagged c -- You shouldn't be able to flip a flagged tile
                             changedSquare (Revealed c) = Revealed c
 
+-- Check the game condition when a given tile is flipped.
+-- (The win condition check takes in the map with the given tile already flipped).
 checkFlipGameCondition :: Game -> (Int,Int) -> GameState
 checkFlipGameCondition (m,g) (x,y)
   | checkFlipLoss (getSquareContents m (x,y)) = Lost
   | checkFlipWin m = Won
   | otherwise = g
   where
+      -- This function checks if flipping a square will cause an explosion.
       checkFlipLoss :: Contents -> Bool
       checkFlipLoss Mine = True
       checkFlipLoss _ = False
 
+      -- This function checks if (given a certain map), the game has been won.
+      -- Note that it does not actually take the flipped tile into account, as that would be less readable.
       checkFlipWin :: Map -> Bool
       checkFlipWin [] = True
       checkFlipWin (r : rs) = checkRowWin r && checkFlipWin rs
 
+      -- Given a row of the map, check if every element in the row is in a correct end-game condition.
       checkRowWin :: [Square] -> Bool
       checkRowWin [] = True
       checkRowWin (s : ss) = checkSquareCorrect s && checkRowWin ss
 
+      -- Check if a square is in a valid win end-game condition.
       checkSquareCorrect :: Square -> Bool
-      checkSquareCorrect (Unflipped Mine) = True
+      checkSquareCorrect (Unflipped Mine) = True -- A Mine can either be unflipped or flagged for the game to be won.
       checkSquareCorrect (Flagged Mine) = True
-      checkSquareCorrect (Revealed (Empty _)) = True
-      checkSquareCorrect _ = False
-
-
-{-checkFlipLoss :: Square -> Bool
-checkFlipLoss (Square c) = checkContents c 
-                    where
-                        checkContents :: Contents -> Bool
-                        checkContents Mine = True
-                        checkContents _ = True-}
+      checkSquareCorrect (Revealed (Empty _)) = True -- An empty tile must be revealed for the game to be won.
+      checkSquareCorrect _ = False -- Any other case means the game has not been won yet.
 
 {- HELPER FUNCTIONS -}
 -- Get square at coordinates. Not safe!
