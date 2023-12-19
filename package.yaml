@@ -49,6 +49,7 @@ executables:
     dependencies:
     - minesweeper
     - random
+    - threepenny-gui >= 0.9.4.0 && < 0.10
 
 tests:
   minesweeper-test:
