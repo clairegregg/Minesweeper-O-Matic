@@ -5,5 +5,5 @@ import Model
 import System.Random
 
 main :: IO ()
-main = print m
-       where (m,_) = flagSquare (newGame 10 10 (mkStdGen 42)) (0,0)
+main = print g
+       where g = flipSquare (newGame 10 10 (mkStdGen 42)) (0,5)

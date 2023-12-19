@@ -1,13 +1,13 @@
 module Model
     (
-        Square, Map, Game, newGame, flagSquare
+        Square, Map, Game, newGame, flagSquare, flipSquare
     ) where
 
 import System.Random ( Random(randomRs), StdGen )
 
 data Contents = Mine | Empty Int deriving Show
 data Square = Unflipped Contents | Revealed Contents | Flagged Contents deriving Show
-data GameState = Play | Lost | Won
+data GameState = Play | Lost | Won deriving Show
 type Map = [[Square]]
 type Game = (Map, GameState)
 
@@ -20,6 +20,29 @@ flagSquare (m,g) (x,y) = (replaceSquare m (changedSquare (getSquare m (x,y))) (x
                             changedSquare (Unflipped c) = Flagged c -- If the square is currently unflipped, flag it
                             changedSquare (Flagged c) = Unflipped c -- If the square is currently flagged, unflag it (unflipped)
                             changedSquare (Revealed c) = Revealed c -- If the square has already been flagged, do nothing
+
+flipSquare :: Game -> (Int,Int) -> Game
+flipSquare (m,g) (x,y) = (replaceSquare m (changedSquare (getSquare m (x,y))) (x,y), checkFlipGameCondition (m,g) (x,y))
+                        where
+                            changedSquare :: Square -> Square
+                            changedSquare (Unflipped c) = Revealed c 
+                            changedSquare (Flagged c) = Revealed c
+                            changedSquare (Revealed c) = Revealed c
+
+checkFlipGameCondition :: Game -> (Int,Int) -> GameState
+checkFlipGameCondition (m,g) (x,y) = if checkFlipLoss (getSquareContents m (x,y)) then Lost else g
+                                     where 
+                                        checkFlipLoss :: Contents -> Bool
+                                        checkFlipLoss Mine = True
+                                        checkFlipLoss _ = False
+
+
+{-checkFlipLoss :: Square -> Bool
+checkFlipLoss (Square c) = checkContents c 
+                    where
+                        checkContents :: Contents -> Bool
+                        checkContents Mine = True
+                        checkContents _ = True-}
 
 {- HELPER FUNCTIONS -}
 -- Get square at coordinates. Not safe!
