@@ -37,6 +37,7 @@ library:
   source-dirs: src
   dependencies:
     - random
+    - threepenny-gui >= 0.9.4.0 && < 0.10
 
 executables:
   minesweeper:
