@@ -13,28 +13,47 @@ type Game = (Map, GameState)
 
 {- INTERACTION WITH GAME -}
 -- Takes in the map and coordinates of a square, and flags it
-flagSquare :: Game -> (Int, Int) -> Game
-flagSquare (m,g) (x,y) = (replaceSquare m (changedSquare (getSquare m (x,y))) (x,y), g)
-                         where 
+flagSquare :: (Int, Int) -> Game ->  Game
+flagSquare (x,y) (m,g) = (replaceSquare m (changedSquare (getSquare m (x,y))) (x,y), g)
+                         where
                             changedSquare :: Square -> Square
                             changedSquare (Unflipped c) = Flagged c -- If the square is currently unflipped, flag it
                             changedSquare (Flagged c) = Unflipped c -- If the square is currently flagged, unflag it (unflipped)
                             changedSquare (Revealed c) = Revealed c -- If the square has already been flagged, do nothing
 
-flipSquare :: Game -> (Int,Int) -> Game
-flipSquare (m,g) (x,y) = (replaceSquare m (changedSquare (getSquare m (x,y))) (x,y), checkFlipGameCondition (m,g) (x,y))
+flipSquare ::  (Int,Int) -> Game -> Game
+flipSquare (x,y) (m,g) = (m', checkFlipGameCondition (m',g) (x,y))
                         where
+                            m' = replaceSquare m (changedSquare (getSquare m (x,y))) (x,y)
+
                             changedSquare :: Square -> Square
-                            changedSquare (Unflipped c) = Revealed c 
-                            changedSquare (Flagged c) = Revealed c
+                            changedSquare (Unflipped c) = Revealed c
+                            changedSquare (Flagged c) = Flagged c -- You shouldn't be able to flip a flagged tile
                             changedSquare (Revealed c) = Revealed c
 
 checkFlipGameCondition :: Game -> (Int,Int) -> GameState
-checkFlipGameCondition (m,g) (x,y) = if checkFlipLoss (getSquareContents m (x,y)) then Lost else g
-                                     where 
-                                        checkFlipLoss :: Contents -> Bool
-                                        checkFlipLoss Mine = True
-                                        checkFlipLoss _ = False
+checkFlipGameCondition (m,g) (x,y)
+  | checkFlipLoss (getSquareContents m (x,y)) = Lost
+  | checkFlipWin m = Won
+  | otherwise = g
+  where
+      checkFlipLoss :: Contents -> Bool
+      checkFlipLoss Mine = True
+      checkFlipLoss _ = False
+
+      checkFlipWin :: Map -> Bool
+      checkFlipWin [] = True
+      checkFlipWin (r : rs) = checkRowWin r && checkFlipWin rs
+
+      checkRowWin :: [Square] -> Bool
+      checkRowWin [] = True
+      checkRowWin (s : ss) = checkSquareCorrect s && checkRowWin ss
+
+      checkSquareCorrect :: Square -> Bool
+      checkSquareCorrect (Unflipped Mine) = True
+      checkSquareCorrect (Flagged Mine) = True
+      checkSquareCorrect (Revealed (Empty _)) = True
+      checkSquareCorrect _ = False
 
 
 {-checkFlipLoss :: Square -> Bool
@@ -117,5 +136,5 @@ newMap :: Int -> Int -> StdGen -> Map
 newMap w h g = placeBombs (emptyMap w h) (bombPositions w h g) (w,h)
 
 -- Generate a new game
-newGame :: Int -> Int -> StdGen -> Game 
+newGame :: Int -> Int -> StdGen -> Game
 newGame w h g = (newMap w h g, Play)
