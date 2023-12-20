@@ -70,6 +70,28 @@ table {
     backdrop-filter: blur(2px);
 }
 
+.result-div {
+    height: 100%;
+}
+
+.result-img {
+    display: inline-block;
+    vertical-align: middle;
+    position: relative;
+    height: 50%;
+    margin-top:25%;
+    margin-bottom: 25%;
+}
+
+.result-text {
+    font-size: 50px;
+    font-weight: bold;
+    color: #f7f6f7;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: -5%;
+}
+
 .table-row {
     padding: 0px;
 }

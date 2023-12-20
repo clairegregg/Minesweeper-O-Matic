@@ -1,7 +1,7 @@
 module MinesweeperElements
     (
         startTile, startMap, MapVisuals, endGameCover
-        ) 
+        )
 where
 
 {-# LANGUAGE OverloadedStrings #-}
@@ -17,7 +17,7 @@ type Tile = (U.UI UI.Element)
 
 startMap :: (Int,Int) -> IORef M.Game -> U.UI UI.Element -> MapVisuals
 startMap (w,h) g cover = UI.div UI.#+ [UI.grid (makeMap (w,h) 0 g cover),cover]
-                        UI.# UI.set (UI.attr "class") "grid" 
+                        UI.# UI.set (UI.attr "class") "grid"
 
 makeMap :: (Int,Int) -> Int -> IORef M.Game -> U.UI UI.Element -> [[Tile]]
 makeMap (w,h) y g cover = if y >= h then [] else makeRow w 0 y g cover  : makeMap (w,h) (y+1) g cover
@@ -46,14 +46,14 @@ emptyTileType x
 
 
 startTile :: (Int, Int) -> IORef M.Game -> U.UI UI.Element -> U.UI UI.Element
-startTile (x,y) g cover = do 
-                            tile <- UI.img UI.# UI.set UI.src "./static/Egg.png" 
+startTile (x,y) g cover = do
+                            tile <- UI.img UI.# UI.set UI.src "./static/Egg.png"
                                     UI.# UI.set UI.alt "Unflipped tile, we don't know what's behind it!"
                                     UI.# UI.set (UI.attr "class") "tile"
-                                    
+
                             U.on UI.click tile $ \_ -> do
                                     liftIO $ print "Clicked"
-                                    game <- liftIO $ readIORef g 
+                                    game <- liftIO $ readIORef g
                                     let (map', game_s') = M.flipSquare (x,y) game
                                     liftIO $ writeIORef g (map', game_s')
                                     let square = M.getTile (map', game_s') (x,y)
@@ -69,6 +69,32 @@ endGameCover :: U.UI UI.Element
 endGameCover =  UI.div UI.#. "grid-cover invisible-grid"
 
 changeEndGameCover :: M.Game -> U.UI UI.Element -> U.UI UI.Element
-changeEndGameCover (_,g) cover = if g == M.Play 
-                                        then cover UI.#. "grid-cover invisible-grid"
-                                        else cover UI.#. "grid-cover shown-grid"
+changeEndGameCover (_,g) cover
+  | g == M.Play = cover UI.#. "grid-cover invisible-grid"
+               UI.# UI.set U.children []
+  | g == M.Won = cover UI.#. "grid-cover shown-grid"
+           UI.#+ [wonDisplay]
+  | otherwise = cover UI.#. "grid-cover shown-grid"
+           UI.#+ [lostDisplay]
+
+lostDisplay :: U.UI UI.Element
+lostDisplay = do
+                image <- UI.img UI.# UI.set UI.src "./static/Bomb.png"
+                                UI.# UI.set UI.alt "Bomb!"
+                                UI.#. "result-img"
+                text <- UI.p UI.# UI.set UI.text "You blew up!"
+                                UI.#. "result-text"
+                contents <- UI.div UI.#+ [UI.element image, UI.element text]
+                                UI.#. "result-div"
+                UI.element contents
+
+wonDisplay :: U.UI UI.Element
+wonDisplay = do
+                image <- UI.img UI.# UI.set UI.src "./static/Bird 0.png"
+                                UI.# UI.set UI.alt "A revealed bird"
+                                UI.#. "result-img"
+                text <- UI.p UI.# UI.set UI.text "You win - you revealed all of the birds!"
+                                UI.#. "result-text"
+                contents <- UI.div UI.#+ [UI.element image, UI.element text]
+                                UI.#. "result-div"
+                UI.element contents

@@ -9,7 +9,6 @@ import qualified Graphics.UI.Threepenny.Core as U
 import MinesweeperElements
 import Data.IORef (newIORef)
 import Control.Monad.IO.Class (MonadIO(liftIO))
-import Control.Concurrent (newChan, forkIO)
 
 main :: IO ()
 main = U.startGUI U.defaultConfig
