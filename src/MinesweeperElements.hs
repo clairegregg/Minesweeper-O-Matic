@@ -3,6 +3,7 @@ module MinesweeperElements
         flaggedTile, unflippedTile, bombTile
         , bird0, bird1, bird2, bird3, bird4
         , bird5, bird6, bird7, bird8
+        , startMap
         ) 
 where
 
@@ -10,6 +11,10 @@ where
 
 import qualified Graphics.UI.Threepenny as UI
 import qualified Graphics.UI.Threepenny.Core as U
+
+startMap :: (Int,Int) -> U.UI UI.Element
+startMap (w,h) = UI.div UI.#+ [UI.grid (replicate h (replicate w unflippedTile))]
+                        UI.# UI.set (UI.attr "class") "grid"
 
 flaggedTile :: U.UI UI.Element
 flaggedTile = UI.img UI.# UI.set UI.src "./static/Flagged Egg.png"

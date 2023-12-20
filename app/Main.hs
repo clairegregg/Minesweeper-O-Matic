@@ -20,12 +20,23 @@ main = U.startGUI U.defaultConfig
 setup :: U.Window -> U.UI ()
 setup window = do
     UI.addStyleSheet window "styles.css"
+
     -- Create UI elements
+    title <- UI.h1 U.# U.set U.text "Bird Minesweeper"
+    description <- UI.div U.#+ [
+        UI.h2 U.# U.set U.text "Welcome to Bird Minesweeper!", 
+        UI.p U.# U.set U.text "To win, you must show every bird on the grid by opening their egg, but do not break open any eggs with bombs inside!", 
+        UI.br,
+        UI.h2 U.# U.set U.text "Instructions", 
+        UI.p U.# U.set U.text "Left click on an egg to reveal what's inside.",
+        UI.br,
+        UI.p U.# U.set U.text "Right click on an egg to 'flag' it if you think there's a bomb inside."
+        ]
+        UI.# UI.set (UI.attr "class") "description"
     button <- UI.button U.# U.set U.text "Click me!"
-    image <- unflippedTile
 
     -- Define UI layout
-    _ <- U.getBody window U.#+ [U.element button, U.element image]
+    _ <- U.getBody window U.#+ [UI.element title, startMap (10,10), U.element description]
 
     -- Define event handling
     U.on UI.click button $ \_ -> do

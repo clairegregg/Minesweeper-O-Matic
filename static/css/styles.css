@@ -1,3 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Gloria+Hallelujah&display=swap');
+body {
+    background-color: #DAE5B0;
+}
+
+h1 {
+    text-align: center;
+    margin: 0px;
+    font-family: 'Gloria Hallelujah', cursive;
+    font-size: 50px;
+    color: #5a6923;
+}
+h2 {
+    text-align: center;
+    font-family: 'Gloria Hallelujah', cursive;
+    color: #2C302E;
+}
+p {
+    text-align: center;
+    font-family: 'Architects Daughter', cursive;
+    color: #2C302E;
+}
+.description {
+    margin: auto;
+    width: fit-content;
+    max-width: 50%;
+}
+table {
+    border: 1px solid;
+}
+
 .tile {
-    width: 50px;
+    width: 35px;
+    padding: 3px;
+    background-image: url("../Grass.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    border-radius: 10px;
+}
+
+.grid {
+    background-color: #b5b7af;
+    width: fit-content;
+    padding: 7px;
+    border-radius: 10px;
+    margin-left: auto;
+    margin-right: auto;
+    border-style: solid;
+    border-color: #9C9F94;
+    box-shadow: 5px 5px 5px #767676;
+}
+
+.table-row {
+    padding: 0px;
+}
+
+.table-cell {
+    padding: 3px;
+    margin: 3px;
 }
