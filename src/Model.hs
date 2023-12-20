@@ -1,6 +1,7 @@
 module Model
     (
-        Square, Map, Game, newGame, flagSquare, flipSquare
+        Square(..), Map, Game, GameState, newGame, flagSquare, flipSquare, getTile, 
+        Contents(..)
     ) where
 
 import System.Random ( Random(randomRs), StdGen )
@@ -66,6 +67,9 @@ checkFlipGameCondition (m,g) (x,y)
       checkSquareCorrect _ = False -- Any other case means the game has not been won yet.
 
 {- HELPER FUNCTIONS -}
+getTile :: Game -> (Int,Int) -> Square
+getTile (m,_) (x,y) = getSquare m (x,y)
+
 -- Get square at coordinates. Not safe!
 getSquare :: Map -> (Int, Int) -> Square
 getSquare m (x,y) = (m !! y) !! x
