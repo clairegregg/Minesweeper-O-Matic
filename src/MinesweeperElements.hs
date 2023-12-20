@@ -1,7 +1,6 @@
 module MinesweeperElements
     (
-        flaggedTile, startTile
-        , startMap, MapVisuals
+        startTile, startMap, MapVisuals
         ) 
 where
 
@@ -25,13 +24,6 @@ makeMap (w,h) y g = if y >= h then [] else makeRow w 0 y g : makeMap (w,h) (y+1)
 
 makeRow :: Int -> Int -> Int -> IORef M.Game -> [Tile]
 makeRow w x y g = if x >= w then [] else startTile (x,y) g : makeRow w (x+1) y g
-
-flaggedTile :: (Int, Int) -> IORef M.Game -> U.UI UI.Element
-flaggedTile (x,y) g = do 
-                        tile <- UI.img UI.# UI.set UI.src "./static/Flagged Egg.png"
-                                    UI.# UI.set UI.alt "Flagged tile"
-                                    UI.# UI.set (UI.attr "class") "tile"
-                        U.element tile
 
 tileTypeToDisplay :: M.Square -> (String, String)
 tileTypeToDisplay (M.Unflipped _) = ("./static/Egg.png", "Unflipped tile, we don't know what's behind it!")
