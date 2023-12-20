@@ -5,6 +5,7 @@ module Model
     ) where
 
 import System.Random ( Random(randomRs), StdGen )
+import Data.List (nub)
 
 data Contents = Mine | Empty Int deriving Show
 data Square = Unflipped Contents | Revealed Contents | Flagged Contents deriving Show
@@ -139,7 +140,7 @@ placeBombs m (b:bs) dimens = placeBombs m'' bs dimens
 
 -- Generate a new map of the given width and height
 newMap :: Int -> Int -> StdGen -> Map
-newMap w h g = placeBombs (emptyMap w h) (bombPositions w h g) (w,h)
+newMap w h g = placeBombs (emptyMap w h) (nub (bombPositions w h g)) (w,h)
 
 -- Generate a new game
 newGame :: Int -> Int -> StdGen -> Game
