@@ -1,6 +1,6 @@
 module Model
     (
-        Square(..), Map, Game, GameState, newGame, flagSquare, flipSquare, getTile, 
+        Square(..), Map, Game, GameState(..), newGame, flagSquare, flipSquare, getTile, 
         Contents(..)
     ) where
 
@@ -8,7 +8,7 @@ import System.Random ( Random(randomRs), StdGen )
 
 data Contents = Mine | Empty Int deriving Show
 data Square = Unflipped Contents | Revealed Contents | Flagged Contents deriving Show
-data GameState = Play | Lost | Won deriving Show
+data GameState = Play | Lost | Won deriving (Show, Eq)
 type Map = [[Square]]
 type Game = (Map, GameState)
 

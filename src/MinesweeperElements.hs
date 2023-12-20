@@ -1,6 +1,6 @@
 module MinesweeperElements
     (
-        startTile, startMap, MapVisuals
+        startTile, startMap, MapVisuals, endGameCover
         ) 
 where
 
@@ -15,15 +15,15 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
 type MapVisuals = (U.UI UI.Element)
 type Tile = (U.UI UI.Element)
 
-startMap :: (Int,Int) -> IORef M.Game -> MapVisuals
-startMap (w,h) g = UI.div UI.#+ [UI.grid (makeMap (w,h) 0 g)]
+startMap :: (Int,Int) -> IORef M.Game -> U.UI UI.Element -> MapVisuals
+startMap (w,h) g cover = UI.div UI.#+ [UI.grid (makeMap (w,h) 0 g cover),cover]
                         UI.# UI.set (UI.attr "class") "grid" 
 
-makeMap :: (Int,Int) -> Int -> IORef M.Game -> [[Tile]]
-makeMap (w,h) y g = if y >= h then [] else makeRow w 0 y g : makeMap (w,h) (y+1) g
+makeMap :: (Int,Int) -> Int -> IORef M.Game -> U.UI UI.Element -> [[Tile]]
+makeMap (w,h) y g cover = if y >= h then [] else makeRow w 0 y g cover  : makeMap (w,h) (y+1) g cover
 
-makeRow :: Int -> Int -> Int -> IORef M.Game -> [Tile]
-makeRow w x y g = if x >= w then [] else startTile (x,y) g : makeRow w (x+1) y g
+makeRow :: Int -> Int -> Int -> IORef M.Game -> U.UI UI.Element ->  [Tile]
+makeRow w x y g cover  = if x >= w then [] else startTile (x,y) g cover : makeRow w (x+1) y g cover
 
 tileTypeToDisplay :: M.Square -> (String, String)
 tileTypeToDisplay (M.Unflipped _) = ("./static/Egg.png", "Unflipped tile, we don't know what's behind it!")
@@ -45,19 +45,30 @@ emptyTileType x
     | otherwise = ("./static/Bird 8.png", "This tile has 8 bombs next to it.")
 
 
-startTile :: (Int, Int) -> IORef M.Game -> U.UI UI.Element
-startTile (x,y) g = do 
+startTile :: (Int, Int) -> IORef M.Game -> U.UI UI.Element -> U.UI UI.Element
+startTile (x,y) g cover = do 
                             tile <- UI.img UI.# UI.set UI.src "./static/Egg.png" 
                                     UI.# UI.set UI.alt "Unflipped tile, we don't know what's behind it!"
                                     UI.# UI.set (UI.attr "class") "tile"
                                     
                             U.on UI.click tile $ \_ -> do
+                                    liftIO $ print "Clicked"
                                     game <- liftIO $ readIORef g 
-                                    let game' = M.flipSquare (x,y) game
-                                    liftIO $ writeIORef g game'
-                                    let square = M.getTile game' (x,y)
+                                    let (map', game_s') = M.flipSquare (x,y) game
+                                    liftIO $ writeIORef g (map', game_s')
+                                    let square = M.getTile (map', game_s') (x,y)
                                     let (image, alt) = tileTypeToDisplay square
+                                    _ <- changeEndGameCover (map', game_s') cover
                                     U.element tile UI.# U.set UI.src image
                                                     UI.# U.set UI.alt alt
 
                             U.element tile
+
+
+endGameCover :: U.UI UI.Element
+endGameCover =  UI.div UI.#. "grid-cover invisible-grid"
+
+changeEndGameCover :: M.Game -> U.UI UI.Element -> U.UI UI.Element
+changeEndGameCover (_,g) cover = if g == M.Play 
+                                        then cover UI.#. "grid-cover invisible-grid"
+                                        else cover UI.#. "grid-cover shown-grid"

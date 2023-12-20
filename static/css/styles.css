@@ -48,6 +48,26 @@ table {
     border-style: solid;
     border-color: #9C9F94;
     box-shadow: 5px 5px 5px #767676;
+    position: relative;
+    overflow: hidden;
+}
+
+.grid-cover {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+.invisible-grid {
+    display: none;
+}
+
+.shown-grid {
+    display: block;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
 }
 
 .table-row {
