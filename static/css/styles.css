@@ -30,7 +30,7 @@ table {
 }
 
 .tile {
-    width: 35px;
+    width: 50px;
     padding: 3px;
     background-image: url("../Grass.png");
     background-size: contain;
