@@ -13,7 +13,7 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
 main :: IO ()
 main = U.startGUI U.defaultConfig
        { U.jsPort = Just 8023
-       , U.jsStatic = Just "./static/"} 
+       , U.jsStatic = Just "./static/"} -- This allows images to be used
        setup
 
 setup :: U.Window -> U.UI ()
@@ -43,20 +43,18 @@ setup window = do
     button <- playButton (U.element m) game
     reset <- UI.button UI.# U.set U.text "Reset"
                             UI.#. "button"
-
     container <- UI.div UI.#+ [UI.div UI.#+ [UI.element button, UI.element reset] 
                                         UI.#. "button-div"]
                            UI.#. "container"
 
+    -- Define UI layout
+    _ <- U.getBody window U.#+ [UI.element title, U.element m, U.element container, U.element description]
+
+    -- Set behaviour for reset button to reset the shared game
     U.on UI.click reset $ \_ -> do
         gen' <- newStdGen
         let randomStream' = randomRs (0, 10*10) gen' 
         liftIO $ writeIORef game (newGame 10 10 randomStream') 
         U.runFunction $ U.ffi "document.getElementById('grid').click();"
-
-    -- Define UI layout
-    _ <- U.getBody window U.#+ [UI.element title, U.element m, U.element container, U.element description]
-
-    return ()
 
 
