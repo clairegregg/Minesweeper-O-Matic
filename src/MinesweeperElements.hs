@@ -148,7 +148,7 @@ wonDisplay = do
                 image <- UI.img UI.# UI.set UI.src "./static/Bird 0.png"
                                 UI.# UI.set UI.alt "A revealed bird"
                                 UI.#. "result-img"
-                text <- UI.p UI.# UI.set UI.text "You win - you revealed all of the birds!"
+                text <- UI.p UI.# UI.set UI.text "You win!"
                                 UI.#. "result-text"
                 contents <- UI.div UI.#+ [UI.element image, UI.element text]
                                 UI.#. "result-div"
