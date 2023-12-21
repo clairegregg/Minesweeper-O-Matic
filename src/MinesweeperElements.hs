@@ -52,10 +52,10 @@ startTile (x,y) g cover = do
                                     UI.# UI.set (UI.attr "class") "tile"
 
                             U.on UI.click tile $ \_ -> do
-                                    liftIO $ print "Clicked"
                                     game <- liftIO $ readIORef g
                                     let (map', game_s') = M.flipSquare (x,y) game
                                     liftIO $ writeIORef g (map', game_s')
+                                    liftIO $ print (map', game_s')
                                     let square = M.getTile (map', game_s') (x,y)
                                     let (image, alt) = tileTypeToDisplay square
                                     _ <- changeEndGameCover (map', game_s') cover

@@ -7,8 +7,8 @@ module Model
 import System.Random ( Random(randomRs), StdGen )
 import Data.List (nub)
 
-data Contents = Mine | Empty Int deriving Show
-data Square = Unflipped Contents | Revealed Contents | Flagged Contents deriving Show
+data Contents = Mine | Empty Int deriving (Show, Eq)
+data Square = Unflipped Contents | Revealed Contents | Flagged Contents deriving (Show, Eq)
 data GameState = Play | Lost | Won deriving (Show, Eq)
 type Map = [[Square]]
 type Game = (Map, GameState)
@@ -23,12 +23,40 @@ flagSquare (x,y) (m,g) = (replaceSquare m (changedSquare (getSquare m (x,y))) (x
                             changedSquare (Flagged c) = Unflipped c -- If the square is currently flagged, unflag it (unflipped)
                             changedSquare (Revealed c) = Revealed c -- If the square has already been flagged, do nothing
 
+-- Allow empty tile flips to spread.
+-- If a tile is empty, flip it and check the rest of the tiles in the list.
+-- If a tile is not empty, just check the rest of the list.
+checkEmptyFlip :: [(Int, Int)] -> Game -> Game
+checkEmptyFlip [] g = g
+checkEmptyFlip ((x,y):cs) (m,g) = if empty
+                                    then checkEmptyFlip cs (flipSquare (x,y) (m,g))
+                                    else checkEmptyFlip cs (m,g)
+                                  where 
+                                    sq = getSquareSafe m (x,y)
+
+                                    empty = case sq of
+                                            Just (Unflipped (Empty 0)) -> True
+                                            _ -> False
+
+
+
 -- Flips a square at the given coordinates. This function also checks the win condition after the square has been flipped.
 flipSquare ::  (Int,Int) -> Game -> Game
 flipSquare (x,y) (m,g) = (m', checkFlipGameCondition (m',g) (x,y)) -- return the new map (with flipped square), and the new game condition
                         where
+                            -- Get the state the square starts in
+                            square = getSquare m (x,y)
+
                             -- Calculate the map with the given square flipped.
-                            m' = replaceSquare m (changedSquare (getSquare m (x,y))) (x,y)
+                            m' = case square of 
+                                -- If the square being flipped is completely empty and not next to any bombs, the flip can expand.
+                                Unflipped (Empty 0) -> let 
+                                                            -- First, flip the tile itself
+                                                            m'' = replaceSquare m (Revealed (Empty 0)) (x,y)
+                                                        in
+                                                            -- Then, expand the flip in every direction
+                                                            fst $ checkEmptyFlip [(x',y') | x' <- [x-1, x, x+1], y' <- [y-1, y, y+1]] (m'',g)
+                                _ -> replaceSquare m (changedSquare (getSquare m (x,y))) (x,y)
 
                             -- What should happen to each type of square?
                             changedSquare :: Square -> Square
@@ -74,6 +102,20 @@ getTile (m,_) (x,y) = getSquare m (x,y)
 -- Get square at coordinates. Not safe!
 getSquare :: Map -> (Int, Int) -> Square
 getSquare m (x,y) = (m !! y) !! x
+
+-- Alternative to !! which returns Nothing if the element is out of bounds
+safeIndex :: [a] -> Int -> Maybe a
+safeIndex [] _ = Nothing
+safeIndex (x:_) 0 = Just x
+safeIndex (_:xs) n
+    | n < 0     = Nothing
+    | otherwise = safeIndex xs (n - 1)
+
+-- Get square at coordinates -  returns Nothing if coordinates are invalid
+getSquareSafe :: Map -> (Int, Int) -> Maybe Square
+getSquareSafe m (x,y) = do 
+                            r <- m `safeIndex` y
+                            r `safeIndex` x
 
 -- Get square contents. Not safe!
 getSquareContents :: Map -> (Int, Int) -> Contents
