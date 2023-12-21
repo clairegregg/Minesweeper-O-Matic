@@ -17,23 +17,24 @@ type Tile = (U.UI UI.Element)
 
 startMap :: (Int,Int) -> IORef M.Game ->  U.UI UI.Element -> MapVisuals
 startMap (w,h) g  cover = do
-                            let tiles = makeMap (w,h) 0 g  cover
+                            let tiles = makeMap (w,h) 0 g
                             grid <- UI.div UI.#+ [UI.grid tiles,cover]
                                     UI.# UI.set (UI.attr "class") "grid"
                             
                             U.on UI.click grid $ \_ -> do
                                 game <- liftIO $ readIORef g
+                                _ <- changeEndGameCover game cover
                                 let newTiles = updateGrid 0 game tiles
                                 U.element grid UI.# UI.set U.children [] 
-                                     UI.#+ [UI.grid newTiles,cover]
+                                     UI.#+ [UI.grid newTiles,cover]    
                             UI.element grid
 
 
-makeMap :: (Int,Int) -> Int -> IORef M.Game -> U.UI UI.Element -> [[Tile]]
-makeMap (w,h) y g cover = if y >= h then [] else makeRow w 0 y g cover  : makeMap (w,h) (y+1) g cover
+makeMap :: (Int,Int) -> Int -> IORef M.Game -> [[Tile]]
+makeMap (w,h) y g = if y >= h then [] else makeRow w 0 y g  : makeMap (w,h) (y+1) g
 
-makeRow :: Int -> Int -> Int -> IORef M.Game -> U.UI UI.Element ->  [Tile]
-makeRow w x y g cover  = if x >= w then [] else startTile (x,y) g cover : makeRow w (x+1) y g cover
+makeRow :: Int -> Int -> Int -> IORef M.Game ->  [Tile]
+makeRow w x y g  = if x >= w then [] else startTile (x,y) g : makeRow w (x+1) y g
 
 tileTypeToDisplay :: M.Square -> (String, String)
 tileTypeToDisplay (M.Unflipped _) = ("./static/Egg.png", "Unflipped tile, we don't know what's behind it!")
@@ -54,13 +55,9 @@ emptyTileType x
     | x == 8 = ("./static/Bird 8.png", "This tile has 8 bombs next to it.")
     | otherwise = ("./static/Bird 8.png", "This tile has 8 bombs next to it.")
 
-emptyTileForSpread :: M.Square -> Bool
-emptyTileForSpread (M.Revealed (M.Empty 0)) = True
-emptyTileForSpread _ = False
 
-
-startTile :: (Int, Int) -> IORef M.Game -> U.UI UI.Element -> U.UI UI.Element
-startTile (x,y) g cover = do
+startTile :: (Int, Int) -> IORef M.Game -> U.UI UI.Element
+startTile (x,y) g = do
                             tile <- UI.img UI.# UI.set UI.src "./static/Egg.png"
                                     UI.# UI.set UI.alt "Unflipped tile, we don't know what's behind it!"
                                     UI.# UI.set (UI.attr "class") "tile"
@@ -69,17 +66,11 @@ startTile (x,y) g cover = do
                                     game <- liftIO $ readIORef g
                                     let (map', game_s') = M.flipSquare (x,y) game
                                     liftIO $ writeIORef g (map', game_s')
-                                    --liftIO $ print (map', game_s')
-                                    let square = M.getTile (map', game_s') (x,y)
-                                    let (image, alt) = tileTypeToDisplay square
-                                    _ <- changeEndGameCover (map', game_s') cover
-                                    U.element tile UI.# U.set UI.src image
-                                                    UI.# U.set UI.alt alt
+
                             U.element tile
 
 updateTile :: M.Square -> Tile -> Tile
 updateTile square tile = do
-                            liftIO $ print $ "Updating tile " ++ show square
                             let (image, alt) = tileTypeToDisplay square
                             tile UI.# U.set UI.src image
                                 UI.# U.set UI.alt alt
