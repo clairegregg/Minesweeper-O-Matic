@@ -22,7 +22,9 @@ setup window = do
     UI.addStyleSheet window "styles.css"
 
     -- Create the model of the game
-    game <- liftIO $ newIORef $ newGame 10 10 (mkStdGen 42)
+    gen <- newStdGen
+    let randomStream = randomRs (0, 10*10) gen 
+    game <- liftIO $ newIORef $ newGame 10 10 randomStream
 
     -- Create UI elements
     title <- UI.h1 U.# U.set U.text "Bird Minesweeper"
@@ -39,6 +41,8 @@ setup window = do
     cover <- endGameCover
     m <- startMap (10,10) game (UI.element cover)
     button <- playButton (U.element m) game
+    
+
 
     -- Define UI layout
     _ <- U.getBody window U.#+ [UI.element title, U.element m, U.element button, U.element description]

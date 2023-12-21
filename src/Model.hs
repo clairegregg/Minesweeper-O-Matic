@@ -137,8 +137,8 @@ emptyMap :: Int -> Int -> Map
 emptyMap w h = replicate h (replicate w (Unflipped (Empty 0)))
 
 -- Taking in width, height, and a random generator, generate a list of positions for bombs/mines
-bombPositions :: Int -> Int -> StdGen -> [(Int,Int)]
-bombPositions w h gen = take (numBombs w h) (indexToXY (randomRs (0, w*h) gen))
+bombPositions :: Int -> Int -> [Int] -> [(Int,Int)]
+bombPositions w h gen = take (numBombs w h) (indexToXY gen)
                         where
                             -- randomRS creates a list of indices to the map as a whole
                             -- This function turns these indices into x,y coordinates on the map
@@ -181,9 +181,9 @@ placeBombs m (b:bs) dimens = placeBombs m'' bs dimens
                                   m'' = nextToBomb m' b dimens
 
 -- Generate a new map of the given width and height
-newMap :: Int -> Int -> StdGen -> Map
+newMap :: Int -> Int -> [Int] -> Map
 newMap w h g = placeBombs (emptyMap w h) (nub (bombPositions w h g)) (w,h)
 
 -- Generate a new game
-newGame :: Int -> Int -> StdGen -> Game
+newGame :: Int -> Int -> [Int] -> Game
 newGame w h g = (newMap w h g, Play)
