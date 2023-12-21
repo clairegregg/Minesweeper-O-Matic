@@ -22,18 +22,15 @@ playButton :: MapVisuals -> IORef M.Game -> U.UI UI.Element
 playButton _ _ = do 
                     -- Create the button
                     button <- UI.button UI.# U.set U.text "Play"
-                                        UI.#. "play-button"
+                                        UI.#. "button"
                                         UI.# U.set (UI.attr "title") "This button will play one move of the game for you." 
-
-                    container <- UI.div UI.#+ [UI.element button] 
-                                        UI.#. "button-div"
 
                     -- When the button is clicked (for now) just refresh the grid         
                     U.on UI.click button $ \_ -> do
                         U.runFunction $ U.ffi "document.getElementById('grid').click();"
 
                     -- Return the button
-                    UI.element container
+                    UI.element button
 
 -- Generate the overall game map, given width, height, and the existing game model
 startMap :: (Int,Int) -> IORef M.Game ->  U.UI UI.Element -> MapVisuals

@@ -7,7 +7,7 @@ import System.Random
 import qualified Graphics.UI.Threepenny as UI
 import qualified Graphics.UI.Threepenny.Core as U
 import MinesweeperElements ( endGameCover, startMap, playButton )
-import Data.IORef (newIORef)
+import Data.IORef (newIORef, writeIORef)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 
 main :: IO ()
@@ -41,11 +41,21 @@ setup window = do
     cover <- endGameCover
     m <- startMap (10,10) game (UI.element cover)
     button <- playButton (U.element m) game
-    
+    reset <- UI.button UI.# U.set U.text "Reset"
+                            UI.#. "button"
 
+    container <- UI.div UI.#+ [UI.div UI.#+ [UI.element button, UI.element reset] 
+                                        UI.#. "button-div"]
+                           UI.#. "container"
+
+    U.on UI.click reset $ \_ -> do
+        gen' <- newStdGen
+        let randomStream' = randomRs (0, 10*10) gen' 
+        liftIO $ writeIORef game (newGame 10 10 randomStream') 
+        U.runFunction $ U.ffi "document.getElementById('grid').click();"
 
     -- Define UI layout
-    _ <- U.getBody window U.#+ [UI.element title, U.element m, U.element button, U.element description]
+    _ <- U.getBody window U.#+ [UI.element title, U.element m, U.element container, U.element description]
 
     return ()
 

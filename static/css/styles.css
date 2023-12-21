@@ -100,20 +100,19 @@ table {
     margin: 3px;
 }
 
-.button-div {
-    position: relative;
-    width: 100%;
-    padding-top: 30px;
-    padding-bottom: 20px;
-    height: 60px;
+.container {
+    height: fit-content;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 30px;
 }
 
-.play-button {
-    margin: 0;
-    position: absolute;
-    left: 50%;
-    -ms-transform: translateX(-50%);
-    transform: translateX(-50%);
+.button-div {
+    text-align: center;
+}
+
+.button {
     background-color: #A6C044;
     padding: 15px;
     font-size: 30px;
@@ -121,7 +120,8 @@ table {
     color: #2C302E;
     box-shadow: 2px 2px 2px #767676;
     border-radius:7px;
+    margin: 0 10px;
 }
-.play-button:hover {
-    background-color: #91ab37; /* Green */
+.button:hover {
+    background-color: #91ab37;
   }
