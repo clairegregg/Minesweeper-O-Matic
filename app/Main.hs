@@ -6,10 +6,9 @@ import Model
 import System.Random
 import qualified Graphics.UI.Threepenny as UI
 import qualified Graphics.UI.Threepenny.Core as U
-import MinesweeperElements ( endGameCover, startMap, Tile )
+import MinesweeperElements ( endGameCover, startMap, playButton )
 import Data.IORef (newIORef)
 import Control.Monad.IO.Class (MonadIO(liftIO))
-import GHC.IORef (IORef(IORef))
 
 main :: IO ()
 main = U.startGUI U.defaultConfig
@@ -21,6 +20,9 @@ setup :: U.Window -> U.UI ()
 setup window = do
     U.runFunction $ U.ffi "document.oncontextmenu = function(e) { e.preventDefault(); };"
     UI.addStyleSheet window "styles.css"
+
+    -- Create the model of the game
+    game <- liftIO $ newIORef $ newGame 10 10 (mkStdGen 42)
 
     -- Create UI elements
     title <- UI.h1 U.# U.set U.text "Bird Minesweeper"
@@ -35,12 +37,11 @@ setup window = do
         ]
         UI.# UI.set (UI.attr "class") "description"
     cover <- endGameCover
-
-    -- Create the model of the game
-    game <- liftIO $ newIORef $ newGame 10 10 (mkStdGen 42)
+    m <- startMap (10,10) game (UI.element cover)
+    button <- playButton (U.element m) game
 
     -- Define UI layout
-    _ <- U.getBody window U.#+ [UI.element title, startMap (10,10) game (UI.element cover), U.element description]
+    _ <- U.getBody window U.#+ [UI.element title, U.element m, U.element button, U.element description]
 
     return ()
 

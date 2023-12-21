@@ -1,6 +1,6 @@
 module MinesweeperElements
     (
-        startTile, startMap, MapVisuals, endGameCover, Tile
+        startTile, startMap, MapVisuals, endGameCover, Tile, playButton
     )
 where
 
@@ -15,6 +15,26 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
 type MapVisuals = (U.UI UI.Element)
 type Tile = (U.UI UI.Element)
 
+-- This function creates the button which will allow the AI to make one play.
+-- Note that it takes in MapVisuals even though iut does not use them. 
+--   This is because Threepenny is missing a function to trigger a click on an element, so I use JavaScript for this internally
+playButton :: MapVisuals -> IORef M.Game -> U.UI UI.Element
+playButton _ _ = do 
+                    -- Create the button
+                    button <- UI.button UI.# U.set U.text "Play"
+                                        UI.#. "play-button"
+                                        UI.# U.set (UI.attr "title") "This button will play one move of the game for you." 
+
+                    container <- UI.div UI.#+ [UI.element button] 
+                                        UI.#. "button-div"
+
+                    -- When the button is clicked (for now) just refresh the grid         
+                    U.on UI.click button $ \_ -> do
+                        U.runFunction $ U.ffi "document.getElementById('grid').click();"
+
+                    -- Return the button
+                    UI.element container
+
 -- Generate the overall game map, given width, height, and the existing game model
 startMap :: (Int,Int) -> IORef M.Game ->  U.UI UI.Element -> MapVisuals
 startMap (w,h) g  cover = do
@@ -22,10 +42,12 @@ startMap (w,h) g  cover = do
                             let tiles = makeMap (w,h) 0 g
                             grid <- UI.div UI.#+ [UI.grid tiles,cover]
                                     UI.# UI.set (UI.attr "class") "grid"
+                                    UI.# UI.set (UI.attr "id") "grid"
                             
                             -- Add on-click reaction to rerender the map every time it is clicked
                             -- This is necessary for the map to update appropriately when a large area of empty space is revealed at once
                             U.on UI.click grid $ \_ -> do
+                                liftIO $ print "clicked"
                                 game <- liftIO $ readIORef g            -- Read the game model IORef
                                 _ <- changeEndGameCover game cover      -- Update the end-game display
                                 let newTiles = updateGrid 0 game tiles  -- Get new tiles
