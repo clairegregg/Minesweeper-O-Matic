@@ -1,6 +1,6 @@
 module Model
     (
-        Square(..), Map, Game, GameState(..), newGame, flagSquare, flipSquare, getTile, 
+        Square(..), Map, Game, GameState(..), newGame, flagSquare, flipSquare, getTile, getTileSafe,
         Contents(..)
     ) where
 
@@ -98,6 +98,9 @@ checkFlipGameCondition (m,g) (x,y)
 {- HELPER FUNCTIONS -}
 getTile :: Game -> (Int,Int) -> Square
 getTile (m,_) (x,y) = getSquare m (x,y)
+
+getTileSafe :: Game -> (Int,Int) -> Maybe Square
+getTileSafe (m,_) (x,y) = getSquareSafe m (x,y)
 
 -- Get square at coordinates. Not safe!
 getSquare :: Map -> (Int, Int) -> Square

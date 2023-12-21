@@ -1,6 +1,6 @@
 module MinesweeperElements
     (
-        startTile, startMap, MapVisuals, endGameCover
+        startTile, startMap, MapVisuals, endGameCover, Tile
         )
 where
 
@@ -15,9 +15,19 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
 type MapVisuals = (U.UI UI.Element)
 type Tile = (U.UI UI.Element)
 
-startMap :: (Int,Int) -> IORef M.Game -> U.UI UI.Element -> MapVisuals
-startMap (w,h) g cover = UI.div UI.#+ [UI.grid (makeMap (w,h) 0 g cover),cover]
-                        UI.# UI.set (UI.attr "class") "grid"
+startMap :: (Int,Int) -> IORef M.Game ->  U.UI UI.Element -> MapVisuals
+startMap (w,h) g  cover = do
+                            let tiles = makeMap (w,h) 0 g  cover
+                            grid <- UI.div UI.#+ [UI.grid tiles,cover]
+                                    UI.# UI.set (UI.attr "class") "grid"
+                            
+                            U.on UI.click grid $ \_ -> do
+                                game <- liftIO $ readIORef g
+                                let newTiles = updateGrid 0 game tiles
+                                U.element grid UI.# UI.set U.children [] 
+                                     UI.#+ [UI.grid newTiles,cover]
+                            UI.element grid
+
 
 makeMap :: (Int,Int) -> Int -> IORef M.Game -> U.UI UI.Element -> [[Tile]]
 makeMap (w,h) y g cover = if y >= h then [] else makeRow w 0 y g cover  : makeMap (w,h) (y+1) g cover
@@ -44,6 +54,10 @@ emptyTileType x
     | x == 8 = ("./static/Bird 8.png", "This tile has 8 bombs next to it.")
     | otherwise = ("./static/Bird 8.png", "This tile has 8 bombs next to it.")
 
+emptyTileForSpread :: M.Square -> Bool
+emptyTileForSpread (M.Revealed (M.Empty 0)) = True
+emptyTileForSpread _ = False
+
 
 startTile :: (Int, Int) -> IORef M.Game -> U.UI UI.Element -> U.UI UI.Element
 startTile (x,y) g cover = do
@@ -55,15 +69,36 @@ startTile (x,y) g cover = do
                                     game <- liftIO $ readIORef g
                                     let (map', game_s') = M.flipSquare (x,y) game
                                     liftIO $ writeIORef g (map', game_s')
-                                    liftIO $ print (map', game_s')
+                                    --liftIO $ print (map', game_s')
                                     let square = M.getTile (map', game_s') (x,y)
                                     let (image, alt) = tileTypeToDisplay square
                                     _ <- changeEndGameCover (map', game_s') cover
                                     U.element tile UI.# U.set UI.src image
                                                     UI.# U.set UI.alt alt
-
                             U.element tile
 
+updateTile :: M.Square -> Tile -> Tile
+updateTile square tile = do
+                            liftIO $ print $ "Updating tile " ++ show square
+                            let (image, alt) = tileTypeToDisplay square
+                            tile UI.# U.set UI.src image
+                                UI.# U.set UI.alt alt
+
+
+updateRow :: (Int, Int) -> M.Game ->  [Tile] -> [Tile]
+updateRow _ _  [] = []
+updateRow (x,y) game  (t:ts) = case M.getTileSafe game (x, y) of
+                                Nothing -> []
+                                Just sq -> do
+                                            tile <- [updateTile sq t]
+                                            tile : updateRow (x+1,y) game ts
+
+
+updateGrid :: Int -> M.Game -> [[Tile]] -> [[Tile]]
+updateGrid _ _  [] = []
+updateGrid y game  (ts:tss) = do
+                                row <- [updateRow (0,y) game ts]
+                                row : updateGrid (y+1) game tss
 
 endGameCover :: U.UI UI.Element
 endGameCover =  UI.div UI.#. "grid-cover invisible-grid"

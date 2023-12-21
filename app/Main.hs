@@ -6,9 +6,10 @@ import Model
 import System.Random
 import qualified Graphics.UI.Threepenny as UI
 import qualified Graphics.UI.Threepenny.Core as U
-import MinesweeperElements
+import MinesweeperElements ( endGameCover, startMap, Tile )
 import Data.IORef (newIORef)
 import Control.Monad.IO.Class (MonadIO(liftIO))
+import GHC.IORef (IORef(IORef))
 
 main :: IO ()
 main = U.startGUI U.defaultConfig
