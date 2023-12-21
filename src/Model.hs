@@ -23,22 +23,19 @@ flagSquare (x,y) (m,g) = (replaceSquare m (changedSquare (getSquare m (x,y))) (x
                             changedSquare (Flagged c) = Unflipped c -- If the square is currently flagged, unflag it (unflipped)
                             changedSquare (Revealed c) = Revealed c -- If the square has already been flagged, do nothing
 
--- Allow empty tile flips to spread.
--- If a tile is empty, flip it and check the rest of the tiles in the list.
--- If a tile is not empty, just check the rest of the list.
-checkEmptyFlip :: [(Int, Int)] -> Game -> Game
-checkEmptyFlip [] g = g
-checkEmptyFlip ((x,y):cs) (m,g) = if empty
-                                    then checkEmptyFlip cs (flipSquare (x,y) (m,g))
-                                    else checkEmptyFlip cs (m,g)
-                                  where 
+
+-- Flip a set of tiles (if they are flippable).
+-- This is done as the set of tiles directly around an Empty 0 tile can always be flipped.
+flipAdjacent :: [(Int,Int)] -> Game -> Game
+flipAdjacent [] g = g
+flipAdjacent ((x,y):cs) (m,g) = if flippable
+                                    then flipAdjacent cs (flipSquare (x,y) (m,g))
+                                    else flipAdjacent cs (m,g)
+                                    where 
                                     sq = getSquareSafe m (x,y)
-
-                                    empty = case sq of
-                                            Just (Unflipped (Empty 0)) -> True
+                                    flippable = case sq of
+                                            Just (Unflipped _) -> True
                                             _ -> False
-
-
 
 -- Flips a square at the given coordinates. This function also checks the win condition after the square has been flipped.
 flipSquare ::  (Int,Int) -> Game -> Game
@@ -55,7 +52,7 @@ flipSquare (x,y) (m,g) = (m', checkFlipGameCondition (m',g) (x,y)) -- return the
                                                             m'' = replaceSquare m (Revealed (Empty 0)) (x,y)
                                                         in
                                                             -- Then, expand the flip in every direction
-                                                            fst $ checkEmptyFlip [(x',y') | x' <- [x-1, x, x+1], y' <- [y-1, y, y+1]] (m'',g)
+                                                            fst $ flipAdjacent [(x',y') | x' <- [x-1, x, x+1], y' <- [y-1, y, y+1]] (m'',g)
                                 _ -> replaceSquare m (changedSquare (getSquare m (x,y))) (x,y)
 
                             -- What should happen to each type of square?
