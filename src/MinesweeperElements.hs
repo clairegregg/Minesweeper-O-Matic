@@ -19,7 +19,7 @@ type Tile = (U.UI UI.Element)
 -- Note that it takes in MapVisuals even though iut does not use them. 
 --   This is because Threepenny is missing a function to trigger a click on an element, so I use JavaScript for this internally
 playButton :: MapVisuals -> IORef M.Game -> U.UI UI.Element
-playButton _ _ = do 
+playButton _ g = do 
                     -- Create the button
                     button <- UI.button UI.# U.set U.text "Play"
                                         UI.#. "button"
@@ -27,6 +27,9 @@ playButton _ _ = do
 
                     -- When the button is clicked (for now) just refresh the grid         
                     U.on UI.click button $ \_ -> do
+                        game <- liftIO $ readIORef g
+                        let game' = M.play game
+                        liftIO $ writeIORef g game'
                         U.runFunction $ U.ffi "document.getElementById('grid').click();"
 
                     -- Return the button
