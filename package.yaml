@@ -35,6 +35,9 @@ ghc-options:
 
 library:
   source-dirs: src
+  dependencies:
+    - random
+    - threepenny-gui >= 0.9.4.0 && < 0.10
 
 executables:
   minesweeper:
@@ -46,6 +49,8 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - minesweeper
+    - random
+    - threepenny-gui >= 0.9.4.0 && < 0.10
 
 tests:
   minesweeper-test:

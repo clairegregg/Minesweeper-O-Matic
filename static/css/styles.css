@@ -1,0 +1,127 @@
+@import url('https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Gloria+Hallelujah&display=swap');
+body {
+    background-color: #DAE5B0;
+}
+
+h1 {
+    text-align: center;
+    margin: 0px;
+    font-family: 'Gloria Hallelujah', cursive;
+    font-size: 50px;
+    color: #5a6923;
+}
+h2 {
+    text-align: center;
+    font-family: 'Gloria Hallelujah', cursive;
+    color: #2C302E;
+}
+p {
+    text-align: center;
+    font-family: 'Architects Daughter', cursive;
+    color: #2C302E;
+}
+.description {
+    margin: auto;
+    width: fit-content;
+    max-width: 50%;
+}
+table {
+    border: 1px solid;
+}
+
+.tile {
+    width: 50px;
+    padding: 3px;
+    background-image: url("../Grass.png");
+    background-size: contain;
+    background-repeat: no-repeat;
+    border-radius: 10px;
+}
+
+.grid {
+    background-color: #b5b7af;
+    width: fit-content;
+    padding: 7px;
+    border-radius: 10px;
+    margin-left: auto;
+    margin-right: auto;
+    border-style: solid;
+    border-color: #9C9F94;
+    box-shadow: 5px 5px 5px #767676;
+    position: relative;
+    overflow: hidden;
+}
+
+.grid-cover {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+.invisible-grid {
+    display: none;
+}
+
+.shown-grid {
+    display: block;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+}
+
+.result-div {
+    height: 100%;
+}
+
+.result-img {
+    display: inline-block;
+    vertical-align: middle;
+    position: relative;
+    height: 50%;
+    margin-top:25%;
+    margin-bottom: 25%;
+}
+
+.result-text {
+    font-size: 50px;
+    font-weight: bold;
+    color: #f7f6f7;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.table-row {
+    padding: 0px;
+}
+
+.table-cell {
+    padding: 3px;
+    margin: 3px;
+}
+
+.container {
+    height: fit-content;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 30px;
+}
+
+.button-div {
+    text-align: center;
+}
+
+.button {
+    background-color: #A6C044;
+    padding: 15px;
+    font-size: 30px;
+    font-family: 'Architects Daughter', cursive;
+    color: #2C302E;
+    box-shadow: 2px 2px 2px #767676;
+    border-radius:7px;
+    margin: 0 10px;
+}
+.button:hover {
+    background-color: #91ab37;
+  }
