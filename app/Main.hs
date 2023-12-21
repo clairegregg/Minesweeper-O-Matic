@@ -19,6 +19,7 @@ main = U.startGUI U.defaultConfig
 
 setup :: U.Window -> U.UI ()
 setup window = do
+    U.runFunction $ U.ffi "document.oncontextmenu = function(e) { e.preventDefault(); };"
     UI.addStyleSheet window "styles.css"
 
     -- Create UI elements

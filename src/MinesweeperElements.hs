@@ -32,6 +32,13 @@ startMap (w,h) g  cover = do
                                 U.element grid UI.# UI.set U.children [] 
                                      UI.#+ [UI.grid newTiles,cover]     -- Update the grid with new tiles
 
+                            U.on UI.contextmenu grid $ const $ do
+                                game <- liftIO $ readIORef g            -- Read the game model IORef
+                                _ <- changeEndGameCover game cover      -- Update the end-game display
+                                let newTiles = updateGrid 0 game tiles  -- Get new tiles
+                                U.element grid UI.# UI.set U.children [] 
+                                     UI.#+ [UI.grid newTiles,cover]     -- Update the grid with new tiles
+
                             -- Return the UI element
                             UI.element grid
 
@@ -55,8 +62,13 @@ startTile (x,y) g = do
                             -- Update the game state on a click
                             U.on UI.click tile $ \_ -> do
                                     game <- liftIO $ readIORef g
-                                    let (map', game_s') = M.flipSquare (x,y) game
-                                    liftIO $ writeIORef g (map', game_s')
+                                    let game' = M.flipSquare (x,y) game
+                                    liftIO $ writeIORef g game'
+
+                            U.on UI.contextmenu tile $ const $ do
+                                    game <- liftIO $ readIORef g
+                                    let game' = M.flagSquare (x,y) game
+                                    liftIO $ writeIORef g game'
 
                             -- Return UI element
                             U.element tile
