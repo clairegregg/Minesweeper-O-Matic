@@ -1,13 +1,15 @@
 module Model
     (
-        Square, Map, Game, newGame, flagSquare, flipSquare
+        Square(..), Map, Game, GameState(..), newGame, flagSquare, flipSquare, getTile, getTileSafe,
+        Contents(..)
     ) where
 
 import System.Random ( Random(randomRs), StdGen )
+import Data.List (nub)
 
-data Contents = Mine | Empty Int deriving Show
-data Square = Unflipped Contents | Revealed Contents | Flagged Contents deriving Show
-data GameState = Play | Lost | Won deriving Show
+data Contents = Mine | Empty Int deriving (Show, Eq)
+data Square = Unflipped Contents | Revealed Contents | Flagged Contents deriving (Show, Eq)
+data GameState = Play | Lost | Won deriving (Show, Eq)
 type Map = [[Square]]
 type Game = (Map, GameState)
 
@@ -21,12 +23,37 @@ flagSquare (x,y) (m,g) = (replaceSquare m (changedSquare (getSquare m (x,y))) (x
                             changedSquare (Flagged c) = Unflipped c -- If the square is currently flagged, unflag it (unflipped)
                             changedSquare (Revealed c) = Revealed c -- If the square has already been flagged, do nothing
 
+
+-- Flip a set of tiles (if they are flippable).
+-- This is done as the set of tiles directly around an Empty 0 tile can always be flipped.
+flipAdjacent :: [(Int,Int)] -> Game -> Game
+flipAdjacent [] g = g
+flipAdjacent ((x,y):cs) (m,g) = if flippable
+                                    then flipAdjacent cs (flipSquare (x,y) (m,g))
+                                    else flipAdjacent cs (m,g)
+                                    where 
+                                    sq = getSquareSafe m (x,y)
+                                    flippable = case sq of
+                                            Just (Unflipped _) -> True
+                                            _ -> False
+
 -- Flips a square at the given coordinates. This function also checks the win condition after the square has been flipped.
 flipSquare ::  (Int,Int) -> Game -> Game
 flipSquare (x,y) (m,g) = (m', checkFlipGameCondition (m',g) (x,y)) -- return the new map (with flipped square), and the new game condition
                         where
+                            -- Get the state the square starts in
+                            square = getSquare m (x,y)
+
                             -- Calculate the map with the given square flipped.
-                            m' = replaceSquare m (changedSquare (getSquare m (x,y))) (x,y)
+                            m' = case square of 
+                                -- If the square being flipped is completely empty and not next to any bombs, the flip can expand.
+                                Unflipped (Empty 0) -> let 
+                                                            -- First, flip the tile itself
+                                                            m'' = replaceSquare m (Revealed (Empty 0)) (x,y)
+                                                        in
+                                                            -- Then, expand the flip in every direction
+                                                            fst $ flipAdjacent [(x',y') | x' <- [x-1, x, x+1], y' <- [y-1, y, y+1]] (m'',g)
+                                _ -> replaceSquare m (changedSquare (getSquare m (x,y))) (x,y)
 
                             -- What should happen to each type of square?
                             changedSquare :: Square -> Square
@@ -66,9 +93,29 @@ checkFlipGameCondition (m,g) (x,y)
       checkSquareCorrect _ = False -- Any other case means the game has not been won yet.
 
 {- HELPER FUNCTIONS -}
+getTile :: Game -> (Int,Int) -> Square
+getTile (m,_) (x,y) = getSquare m (x,y)
+
+getTileSafe :: Game -> (Int,Int) -> Maybe Square
+getTileSafe (m,_) (x,y) = getSquareSafe m (x,y)
+
 -- Get square at coordinates. Not safe!
 getSquare :: Map -> (Int, Int) -> Square
 getSquare m (x,y) = (m !! y) !! x
+
+-- Alternative to !! which returns Nothing if the element is out of bounds
+safeIndex :: [a] -> Int -> Maybe a
+safeIndex [] _ = Nothing
+safeIndex (x:_) 0 = Just x
+safeIndex (_:xs) n
+    | n < 0     = Nothing
+    | otherwise = safeIndex xs (n - 1)
+
+-- Get square at coordinates -  returns Nothing if coordinates are invalid
+getSquareSafe :: Map -> (Int, Int) -> Maybe Square
+getSquareSafe m (x,y) = do 
+                            r <- m `safeIndex` y
+                            r `safeIndex` x
 
 -- Get square contents. Not safe!
 getSquareContents :: Map -> (Int, Int) -> Contents
@@ -90,8 +137,8 @@ emptyMap :: Int -> Int -> Map
 emptyMap w h = replicate h (replicate w (Unflipped (Empty 0)))
 
 -- Taking in width, height, and a random generator, generate a list of positions for bombs/mines
-bombPositions :: Int -> Int -> StdGen -> [(Int,Int)]
-bombPositions w h gen = take (numBombs w h) (indexToXY (randomRs (0, w*h) gen))
+bombPositions :: Int -> Int -> [Int] -> [(Int,Int)]
+bombPositions w h gen = take (numBombs w h) (indexToXY gen)
                         where
                             -- randomRS creates a list of indices to the map as a whole
                             -- This function turns these indices into x,y coordinates on the map
@@ -134,9 +181,9 @@ placeBombs m (b:bs) dimens = placeBombs m'' bs dimens
                                   m'' = nextToBomb m' b dimens
 
 -- Generate a new map of the given width and height
-newMap :: Int -> Int -> StdGen -> Map
-newMap w h g = placeBombs (emptyMap w h) (bombPositions w h g) (w,h)
+newMap :: Int -> Int -> [Int] -> Map
+newMap w h g = placeBombs (emptyMap w h) (nub (bombPositions w h g)) (w,h)
 
 -- Generate a new game
-newGame :: Int -> Int -> StdGen -> Game
+newGame :: Int -> Int -> [Int] -> Game
 newGame w h g = (newMap w h g, Play)
