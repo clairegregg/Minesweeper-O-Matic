@@ -33,9 +33,10 @@ setup window = do
         UI.p U.# U.set U.text "Right click on an egg to 'flag' it if you think there's a bomb inside."
         ]
         UI.# UI.set (UI.attr "class") "description"
-
-    game <- liftIO $ newIORef $ newGame 10 10 (mkStdGen 42)
     cover <- endGameCover
+
+    -- Create the model of the game
+    game <- liftIO $ newIORef $ newGame 10 10 (mkStdGen 42)
 
     -- Define UI layout
     _ <- U.getBody window U.#+ [UI.element title, startMap (10,10) game (UI.element cover), U.element description]
