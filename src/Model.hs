@@ -21,15 +21,15 @@ type Game = (Map, GameState)
 play :: Game -> Game
 play g = case findObviousBomb (0, 0) g of
                 Just c -> flagSquare c g
-                Nothing -> case findObviousEmpty (0,0) g of 
-                    Just c -> flipSquare c g 
-                    Nothing -> applyPattern (0,0) g  
+                Nothing -> case findObviousEmpty (0,0) g of
+                    Just c -> flipSquare c g
+                    Nothing -> applyPattern (0,0) g
 
 applyPattern :: (Int, Int) -> Game -> Game
 applyPattern (x,y) g
-  | isValidIndex g (x,y) = if hasPattern1dash1All (x,y) g 
-                            then flipSquare (x,y) g 
-                            else if hasPattern1dash2 (x,y) g 
+  | isValidIndex g (x,y) = if hasPattern1dash1All (x,y) g
+                            then flipSquare (x,y) g
+                            else if hasPattern1dash2 (x,y) g
                                     then flagSquare (x,y) g
                                     else applyPattern (0, y+1) g
   | isValidIndex g (0, y+1) = applyPattern (0, y+1) g
@@ -49,7 +49,7 @@ findObviousBomb (x,y) g
   | otherwise = Nothing
 
 findObviousEmpty :: (Int,Int) -> Game -> Maybe (Int,Int)
-findObviousEmpty (x,y) g 
+findObviousEmpty (x,y) g
     | isValidIndex g (x,y) = case findEmptyAdjacentToTile(x,y) g of
                                 Nothing -> findObviousEmpty (x+1,y) g
                                 Just c -> Just c
@@ -148,7 +148,7 @@ findEmptyAdjacentToTile c g = do
                                                     Revealed (Empty x) -> Just x
                                                     _ -> Nothing
                                 let adjacentFlagged = countAdjacentFlagged c g
-                                if adjacentBombs == adjacentFlagged 
+                                if adjacentBombs == adjacentFlagged
                                     then findUnflippedAdjacent (adjacentIndices c g) g
                                     else Nothing
 
@@ -292,7 +292,7 @@ countAdjecentUnrevealed (x,y) g = sum $ map unrevealed (adjacentSquares (x,y) g)
                                         unrevealed _ = 1
 
 -- Given a tile index, count how many adjacent tiles are currently flagged
-countAdjacentFlagged :: (Int, Int) -> Game -> Int 
+countAdjacentFlagged :: (Int, Int) -> Game -> Int
 countAdjacentFlagged (x,y) g = sum $ map flagged (adjacentSquares (x,y) g)
                                     where
                                         flagged :: Square -> Int
@@ -365,7 +365,7 @@ emptyMap w h = replicate h (replicate w (Unflipped (Empty 0)))
 
 -- Taking in width, height, and a random generator, generate a list of positions for bombs/mines
 bombPositions :: Int -> Int -> [Int] -> Double -> [(Int,Int)]
-bombPositions w h gen difficulty = take (numBombs w h difficulty) (indexToXY gen)
+bombPositions w h gen difficulty = take (numBombs w h difficulty) (indexToXY $ nub gen)
                         where
                             -- randomRS creates a list of indices to the map as a whole
                             -- This function turns these indices into x,y coordinates on the map
@@ -409,7 +409,7 @@ placeBombs m (b:bs) dimens = placeBombs m'' bs dimens
 
 -- Generate a new map of the given width and height
 newMap :: Int -> Int -> [Int] -> Double -> Map
-newMap w h g difficulty = placeBombs (emptyMap w h) (nub (bombPositions w h g difficulty)) (w,h)
+newMap w h g difficulty = placeBombs (emptyMap w h) (bombPositions w h g difficulty) (w,h)
 
 -- Generate a new game
 newGame :: Int -> Int -> [Int] -> Double -> Game
