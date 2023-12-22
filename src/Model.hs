@@ -2,38 +2,51 @@
 module Model
     (
         Square(..), Map, Game, GameState(..), newGame, flagSquare, flipSquare, getTile, getTileSafe,
-        Contents(..), play
+        Contents(..), play, MoveType(..)
     ) where
 
 import Data.List (nub)
-
 data Contents = Mine | Empty Int deriving (Show, Eq)
 data Square = Unflipped Contents | Revealed Contents | Flagged Contents deriving (Show, Eq)
 data GameState = Play | Lost | Won deriving (Show, Eq)
 type Map = [[Square]]
 type Game = (Map, GameState)
+data MoveType = Random | Certain
 
 {- INTERACTION WITH GAME -}
 -- Play takes the current game and makes the best move possible
 -- Moves which have no downside:
 --    - Flag a mine which can only be in one location
 --    - Apply 1-1 rule
-play :: Game -> Game
-play g = case findObviousBomb (0, 0) g of
-                Just c -> flagSquare c g
+--    - Apply 1-2 rule
+--    - Flip tiles which must be empty
+-- Then, if all else fails, just flip a random unflipped tile!
+play :: Game -> ([Int], [Int]) -> (Game, ([Int], [Int]), MoveType)
+play g gen = case findObviousBomb (0, 0) g of
+                Just c -> (flagSquare c g, gen, Certain)
                 Nothing -> case findObviousEmpty (0,0) g of
-                    Just c -> flipSquare c g
-                    Nothing -> applyPattern (0,0) g
+                    Just c -> (flipSquare c g, gen, Certain)
+                    Nothing -> case applyPattern (0,0) g of
+                        Just g' -> (g', gen, Certain)
+                        Nothing -> randomFlip g gen
 
-applyPattern :: (Int, Int) -> Game -> Game
+-- Given the game and a random stream of _valid coordinates_, flip a random unflipped tile
+randomFlip :: Game -> ([Int], [Int]) -> (Game, ([Int], [Int]), MoveType)
+randomFlip g (x:xs, y:ys) = case getTileSafe g (x,y) of
+                        (Just (Unflipped _)) -> (flipSquare (x,y) g, (xs,ys), Random)
+                        _ -> randomFlip g (xs,ys)
+randomFlip _ _ = undefined -- If either stream is empty, something is very broken
+
+-- Try to apply either pattern 1-1 or 1-2 to each tile in the grid
+applyPattern :: (Int, Int) -> Game -> Maybe Game
 applyPattern (x,y) g
   | isValidIndex g (x,y) = if hasPattern1dash1All (x,y) g
-                            then flipSquare (x,y) g
+                            then Just $ flipSquare (x,y) g
                             else if hasPattern1dash2 (x,y) g
-                                    then flagSquare (x,y) g
+                                    then Just $ flagSquare (x,y) g
                                     else applyPattern (0, y+1) g
   | isValidIndex g (0, y+1) = applyPattern (0, y+1) g
-  | otherwise = g
+  | otherwise = Nothing
 
 
 -- This is the equivalent of the basic patterns discussed in https://www.minesweeper.info/wiki/Strategy

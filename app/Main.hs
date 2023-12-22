@@ -35,6 +35,11 @@ setup window = do
     let randomStream = randomRs (0, width*height) gen
     game <- liftIO $ newIORef $ newGame width height randomStream difficulty
 
+    genX <- newStdGen
+    genY <- newStdGen
+    playStream <- liftIO $ newIORef (randomRs (0, width) genX, randomRs (0, height) genY)
+    
+
     -- Create UI elements
     title <- UI.h1 U.# U.set U.text "Bird Minesweeper"
     description <- UI.div U.#+ [
@@ -51,7 +56,7 @@ setup window = do
         UI.# UI.set (UI.attr "class") "description"
     cover <- endGameCover
     m <- startMap (width,height) game (UI.element cover)
-    button <- playButton (U.element m) game
+    button <- playButton (U.element m) game playStream
     reset <- UI.button UI.# U.set U.text "Reset"
                             UI.#. "button"
     container <- UI.div UI.#+ [UI.div UI.#+ [UI.element button, UI.element reset]
@@ -67,5 +72,3 @@ setup window = do
         let randomStream' = randomRs (0, 10*10) gen'
         liftIO $ writeIORef game (newGame 10 10 randomStream' difficulty)
         U.runFunction $ U.ffi "document.getElementById('grid').click();"
-
-
