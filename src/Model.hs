@@ -24,7 +24,11 @@ play g = case findObviousBomb (0, 0) g of
 
 applyPattern :: (Int, Int) -> Game -> Game
 applyPattern (x,y) g
-  | isValidIndex g (x,y) = if hasPattern1dash1All (x,y) g then flipSquare (x,y) g else applyPattern (0, y+1) g
+  | isValidIndex g (x,y) = if hasPattern1dash1All (x,y) g 
+                            then flipSquare (x,y) g 
+                            else if hasPattern1dash2 (x,y) g 
+                                    then flagSquare (x,y) g
+                                    else applyPattern (0, y+1) g
   | isValidIndex g (0, y+1) = applyPattern (0, y+1) g
   | otherwise = g
 
@@ -146,8 +150,8 @@ findBomb [] _ = Nothing
 findBomb (c:cs) g = if isUnflipped (getTile g c) then Just c else findBomb cs g
 
 {- 1-1 pattern finding, for when there are two revealed Empty 1s next to each other against a wall:
-    with | as a wall, [ ] as unrevealed, we can correctly flag where [F] is shown
-  | [ ] [ ] [F]
+    with | as a wall, [ ] as unrevealed, we can correctly reveal where [R] is shown
+  | [ ] [ ] [R]
   | [1] [1] 
 
   This works in a number of orientations. All of these functions take in potential [F] tiles, and return if the 1-1 rule would allow them to be flipped safely
@@ -155,7 +159,7 @@ findBomb (c:cs) g = if isUnflipped (getTile g c) then Just c else findBomb cs g
 
 -- Check all possible orientations of the 1-1 pattern for a given tile, return true if it matches the pattern.
 hasPattern1dash1All :: (Int, Int) -> Game -> Bool
-hasPattern1dash1All (x,y) g = hasPattern1dash1Top (x,y) g || hasPattern1dash1Bottom (x,y) g || hasPattern1dash1Left (x,y) g || hasPattern1dash1Right (x,y) g
+hasPattern1dash1All (x,y) g = isUnflipped(getTile g (x,y)) && (hasPattern1dash1Top (x,y) g || hasPattern1dash1Bottom (x,y) g || hasPattern1dash1Left (x,y) g || hasPattern1dash1Right (x,y) g)
 
 -- Check the 2 possible orientations for the 1-1 pattern where the edge is at the top.
 hasPattern1dash1Top :: (Int, Int) -> Game -> Bool
@@ -195,6 +199,38 @@ hasPattern1dash1 edgeChecker edgeTiles tilesToBeEmpty1 g = (validPosition && edg
                                                     (Revealed (Empty 1)) -> True
                                                     _ -> False
 
+{- 1-2 pattern finding, for when there are two revealed Empty 1s next to each other against a wall:
+    with [ ] as unrevealed, we can correctly flag where [F] is shown
+        [ ] [ ] [F]
+        [1] [2] 
+
+  This works in a number of orientations. All of these functions take in potential [F] tiles, and return if the 1-1 rule would allow them to be flipped safely
+ -}
+
+--hasPattern1dash2 :: (Int, Int) -> Game -> Bool
+--hasPattern1dash2 (x,y) g
+
+hasPattern1dash2 :: (Int, Int) -> Game -> Bool
+hasPattern1dash2 (x,y) g = isUnflipped (getTile g (x,y)) && hasPattern1dash2Dirs (x,y) g
+
+hasPattern1dash2Dirs :: (Int, Int) -> Game -> Bool
+hasPattern1dash2Dirs (x,y) g = hasPattern1dash2Gen (x-2,y+1) (x-1, y+1) g
+                                || hasPattern1dash2Gen (x+2, y+1) (x+1, y+1) g
+                                || hasPattern1dash2Gen (x-2,y-1) (x-1, y-1) g
+                                || hasPattern1dash2Gen (x+2,y-1) (x+1, y-1) g
+                                || hasPattern1dash2Gen (x-1,y-2) (x-1,y-1) g
+                                || hasPattern1dash2Gen (x+1,y-2) (x+1,y-1) g
+                                || hasPattern1dash2Gen (x+1,y+2) (x+1,y+1) g
+                                || hasPattern1dash2Gen (x-1,y+2) (x-1,y+1) g
+
+hasPattern1dash2Gen :: (Int,Int) -> (Int,Int) -> Game -> Bool
+hasPattern1dash2Gen (x1, y1) (x2, y2) g = isValidIndex g (x1,y1) && isEmptyX 1 (x1, y1) && isEmptyX 2 (x2, y2)
+                                where
+                                    isEmptyX :: Int -> (Int, Int) -> Bool
+                                    isEmptyX num c' = case getTile g c' of
+                                                            Revealed (Empty num') -> num == num'
+                                                            _ -> False
+{- Edge finding functions -}
 
 -- These functions all check if all of a list of tiles are next to "an edge" (for pattern matching)
 -- This can be either if they are against the edge of the grid, or if they are all next to revealed tiles
