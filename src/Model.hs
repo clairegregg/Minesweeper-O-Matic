@@ -16,11 +16,39 @@ type Game = (Map, GameState)
 -- Play takes the current game and makes the best move possible
 -- Moves which have no downside:
 --    - Flag a mine which can only be in one location
---    - Reveal a tile which can only be empty
+--    - Apply 1-1 rule
 play :: Game -> Game
 play g = case findObviousBomb (0, 0) g of
-                Nothing -> flagSquare (0,0) g
+                Nothing -> applyPattern (0,0) g
                 Just c -> flagSquare c g
+
+applyPattern :: (Int, Int) -> Game -> Game
+applyPattern (x,y) g
+  | isValidIndex g (x,y) = if hasPattern1dash1 (x,y) g then flipSquare (x,y) g else applyPattern (0, y+1) g
+  | isValidIndex g (0, y+1) = applyPattern (0, y+1) g
+  | otherwise = g
+
+hasPattern1dash1 :: (Int,Int) -> Game -> Bool
+hasPattern1dash1 (x,y) g = (validPosition && tilesAgainstLeftEdge leftEdge g) && (tileIsEmpty1 (x-2, y+1) && tileIsEmpty1 (x-1,y+1))
+                            where
+                                validPosition :: Bool
+                                validPosition = isValidIndex g (x-2,y+1) && isValidIndex g (x+1,y)
+
+                                tileIsEmpty1 :: (Int,Int) -> Bool
+                                tileIsEmpty1 c' = case getTile g c' of
+                                                    (Revealed (Empty 1)) -> True
+                                                    _ -> False
+
+                                leftEdge = [(x-2,y),(x-2,y+1)]
+
+
+-- This checks if all of a list of tiles are next to "an edge" (for pattern matching)
+-- This can be either if they are against the edge of the grid, or if they are all next to revealed tiles
+tilesAgainstLeftEdge :: [(Int,Int)] -> Game -> Bool
+tilesAgainstLeftEdge [] _ = True
+tilesAgainstLeftEdge (c:cs) g = if isValidIndex g c
+                                then isRevealed (getTile g c) && tilesAgainstLeftEdge cs g
+                                else tilesAgainstLeftEdge cs g
 
 -- This is the equivalent of the basic patterns discussed in https://www.minesweeper.info/wiki/Strategy
 -- Loops through all of the tiles in the map, and if there are exactly as many unrevealed spots adjacent as mines predicted next to a revealed spot, 
@@ -58,22 +86,6 @@ findBombAdjacentToTile c g = do
 findBomb :: [(Int,Int)] -> Game -> Maybe (Int, Int)
 findBomb [] _ = Nothing
 findBomb (c:cs) g = if isUnflipped (getTile g c) then Just c else findBomb cs g
-
--- Given a tile index, count how many adjacent tiles are currently unrevealed
-countAdjecentUnrevealed :: (Int, Int) -> Game -> Int
-countAdjecentUnrevealed (x,y) g = sum $ map unrevealed (adjacentSquares (x,y) g)
-                                    where
-                                        unrevealed :: Square -> Int
-                                        unrevealed (Revealed _) = 0
-                                        unrevealed _ = 1
-
--- Given a tile index, return all adjacent squares.
-adjacentSquares :: (Int,Int) -> Game -> [Square]
-adjacentSquares c g = map (getTile g) (adjacentIndices c g)
-
--- Given a tile index, return all valid adjacent tile indices.
-adjacentIndices :: (Int,Int) -> Game -> [(Int,Int)]
-adjacentIndices (x,y) g = filter (isValidIndex g) [(x-1, y-1), (x, y-1), (x+1, y-1), (x-1, y), (x+1, y), (x-1, y+1), (x, y+1), (x+1, y+1)]
 
 -- Takes in the map and coordinates of a square, and flags it.
 flagSquare :: (Int, Int) -> Game ->  Game
@@ -153,12 +165,32 @@ checkFlipGameCondition (m,g) (x,y)
       checkSquareCorrect _ = False -- Any other case means the game has not been won yet.
 
 {- HELPER FUNCTIONS -}
+-- Given a tile index, count how many adjacent tiles are currently unrevealed
+countAdjecentUnrevealed :: (Int, Int) -> Game -> Int
+countAdjecentUnrevealed (x,y) g = sum $ map unrevealed (adjacentSquares (x,y) g)
+                                    where
+                                        unrevealed :: Square -> Int
+                                        unrevealed (Revealed _) = 0
+                                        unrevealed _ = 1
+
+-- Given a tile index, return all adjacent squares.
+adjacentSquares :: (Int,Int) -> Game -> [Square]
+adjacentSquares c g = map (getTile g) (adjacentIndices c g)
+
+-- Given a tile index, return all valid adjacent tile indices.
+adjacentIndices :: (Int,Int) -> Game -> [(Int,Int)]
+adjacentIndices (x,y) g = filter (isValidIndex g) [(x-1, y-1), (x, y-1), (x+1, y-1), (x-1, y), (x+1, y), (x-1, y+1), (x, y+1), (x+1, y+1)]
+
 isValidIndex :: Game -> (Int,Int) -> Bool
 isValidIndex g c = case getTileSafe g c of
                         Nothing -> False
                         _ -> True
 
-isUnflipped :: Square -> Bool 
+isRevealed :: Square -> Bool
+isRevealed (Revealed _) = True
+isRevealed _ = False
+
+isUnflipped :: Square -> Bool
 isUnflipped (Unflipped _) = True
 isUnflipped _ = False
 
