@@ -24,31 +24,62 @@ play g = case findObviousBomb (0, 0) g of
 
 applyPattern :: (Int, Int) -> Game -> Game
 applyPattern (x,y) g
-  | isValidIndex g (x,y) = if hasPattern1dash1 (x,y) g then flipSquare (x,y) g else applyPattern (0, y+1) g
+  | isValidIndex g (x,y) = if hasPattern1dashAll (x,y) g then flipSquare (x,y) g else applyPattern (0, y+1) g
   | isValidIndex g (0, y+1) = applyPattern (0, y+1) g
   | otherwise = g
 
-hasPattern1dash1 :: (Int,Int) -> Game -> Bool
-hasPattern1dash1 (x,y) g = (validPosition && tilesAgainstLeftEdge leftEdge g) && (tileIsEmpty1 (x-2, y+1) && tileIsEmpty1 (x-1,y+1))
+
+hasPattern1dashAll :: (Int, Int) -> Game -> Bool
+hasPattern1dashAll (x,y) g = hasPattern1dash1Top (x,y) g || hasPattern1dash1Bottom (x,y) g || hasPattern1dashLeft (x,y) g || hasPattern1dashRight (x,y) g
+
+hasPattern1dash1Top :: (Int, Int) -> Game -> Bool
+hasPattern1dash1Top (x,y) g = hasPattern1dash tilesAgainstTopEdge [(x,y-2),(x-1,y-2)] [(x-1, y-2),(x-1,y-1)] g
+                            || hasPattern1dash tilesAgainstTopEdge [(x,y-2),(x+1,y-2)] [(x+1, y-2),(x+1,y-1)] g
+
+hasPattern1dash1Bottom :: (Int, Int) -> Game -> Bool
+hasPattern1dash1Bottom (x,y) g = hasPattern1dash tilesAgainstBottomEdge [(x,y+2),(x-1,y+2)] [(x-1, y+2),(x-1,y+1)] g
+                            || hasPattern1dash tilesAgainstTopEdge [(x,y+2),(x+1,y+2)] [(x+1, y+2),(x+1,y+1)] g
+
+
+hasPattern1dashLeft :: (Int,Int) -> Game -> Bool
+hasPattern1dashLeft (x,y) g = hasPattern1dash tilesAgainstLeftEdge [(x-2,y),(x-2,y+1)] [(x-2, y+1),(x-1,y+1)] g
+                                || hasPattern1dash tilesAgainstLeftEdge [(x-2,y),(x-2,y-1)] [(x-2, y-1),(x-1,y-1)] g
+
+hasPattern1dashRight :: (Int,Int) -> Game -> Bool
+hasPattern1dashRight (x,y) g = hasPattern1dash tilesAgainstRightEdge [(x+2,y),(x+2,y+1)] [(x+2, y+1),(x+1,y+1)] g
+                                || hasPattern1dash tilesAgainstRightEdge [(x+2,y),(x+2,y-1)] [(x+2, y-1),(x+1,y-1)] g
+
+hasPattern1dash :: ([(Int,Int)] -> Game -> Bool) -> [(Int,Int)] -> [(Int,Int)] -> Game -> Bool
+hasPattern1dash edgeChecker edgeTiles tilesToBeEmpty1 g = (validPosition && edgeChecker edgeTiles g) && all tileIsEmpty1 tilesToBeEmpty1
                             where
                                 validPosition :: Bool
-                                validPosition = isValidIndex g (x-2,y+1) && isValidIndex g (x+1,y)
+                                validPosition = all (isValidIndex g) edgeTiles
 
                                 tileIsEmpty1 :: (Int,Int) -> Bool
                                 tileIsEmpty1 c' = case getTile g c' of
                                                     (Revealed (Empty 1)) -> True
                                                     _ -> False
 
-                                leftEdge = [(x-2,y),(x-2,y+1)]
-
 
 -- This checks if all of a list of tiles are next to "an edge" (for pattern matching)
 -- This can be either if they are against the edge of the grid, or if they are all next to revealed tiles
+tilesAgainstTopEdge :: [(Int, Int)] -> Game -> Bool
+tilesAgainstTopEdge = tilesAgainstEdge (0,-1)
+
+tilesAgainstBottomEdge :: [(Int, Int)] -> Game -> Bool
+tilesAgainstBottomEdge = tilesAgainstEdge (0,1)
+
 tilesAgainstLeftEdge :: [(Int,Int)] -> Game -> Bool
-tilesAgainstLeftEdge [] _ = True
-tilesAgainstLeftEdge (c:cs) g = if isValidIndex g c
-                                then isRevealed (getTile g c) && tilesAgainstLeftEdge cs g
-                                else tilesAgainstLeftEdge cs g
+tilesAgainstLeftEdge = tilesAgainstEdge (-1,0)
+
+tilesAgainstRightEdge :: [(Int,Int)] -> Game -> Bool
+tilesAgainstRightEdge = tilesAgainstEdge (1,0)
+
+tilesAgainstEdge :: (Int,Int) -> [(Int,Int)] -> Game -> Bool
+tilesAgainstEdge _ [] _ = True
+tilesAgainstEdge (dx,dy) ((x,y):cs) g = if isValidIndex g (x+dx, y+dy)
+                                        then isRevealed (getTile g (x+dx, y+dy)) && tilesAgainstEdge (dx,dy) cs g
+                                        else tilesAgainstEdge (dx,dy) cs g
 
 -- This is the equivalent of the basic patterns discussed in https://www.minesweeper.info/wiki/Strategy
 -- Loops through all of the tiles in the map, and if there are exactly as many unrevealed spots adjacent as mines predicted next to a revealed spot, 
