@@ -39,13 +39,12 @@ findBombFromRevealed c g = do
                                                 _ -> Nothing
                                 let adjacentEmpties = countAdjecentUnrevealed c g
                                 if adjacentBombs == adjacentEmpties
-                                    then Just $ findAdjacentBomb (adjacentIndices c g) g
+                                    then findAdjacentBomb (adjacentIndices c g) g
                                     else Nothing
 
-findAdjacentBomb :: [(Int,Int)] -> Game -> (Int, Int)
-findAdjacentBomb [] _ = undefined
-findAdjacentBomb [c] _ = c
-findAdjacentBomb (c:cs) g = if isUnrevealed (getTile g c) then c else findAdjacentBomb cs g
+findAdjacentBomb :: [(Int,Int)] -> Game -> Maybe (Int, Int)
+findAdjacentBomb [] _ = Nothing
+findAdjacentBomb (c:cs) g = if isUnflipped (getTile g c) then Just c else findAdjacentBomb cs g
 
 countAdjecentUnrevealed :: (Int, Int) -> Game -> Int
 countAdjecentUnrevealed (x,y) g = sum $ map unrevealed (adjacentSquares (x,y) g)
@@ -150,9 +149,9 @@ isValidIndex c g = case getTileSafe g c of
                         Nothing -> False
                         _ -> True
 
-isUnrevealed :: Square -> Bool
-isUnrevealed (Revealed _) = False
-isUnrevealed _ = True
+isUnflipped :: Square -> Bool 
+isUnflipped (Unflipped _) = True
+isUnflipped _ = False
 
 getTile :: Game -> (Int,Int) -> Square
 getTile (m,_) (x,y) = getSquare m (x,y)
