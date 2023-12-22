@@ -47,7 +47,6 @@ startMap (w,h) g  cover = do
                             -- Add on-click reaction to rerender the map every time it is clicked
                             -- This is necessary for the map to update appropriately when a large area of empty space is revealed at once
                             U.on UI.click grid $ \_ -> do
-                                liftIO $ print "clicked"
                                 game <- liftIO $ readIORef g            -- Read the game model IORef
                                 _ <- changeEndGameCover game cover      -- Update the end-game display
                                 let newTiles = updateGrid 0 game tiles  -- Get new tiles

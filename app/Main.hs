@@ -10,6 +10,15 @@ import MinesweeperElements ( endGameCover, startMap, playButton )
 import Data.IORef (newIORef, writeIORef)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 
+width :: Int 
+width = 10
+
+height :: Int
+height = 10
+
+difficulty :: Double
+difficulty = 0.13
+
 main :: IO ()
 main = U.startGUI U.defaultConfig
        { U.jsPort = Just 8023
@@ -23,8 +32,8 @@ setup window = do
 
     -- Create the model of the game
     gen <- newStdGen
-    let randomStream = randomRs (0, 10*10) gen 
-    game <- liftIO $ newIORef $ newGame 10 10 randomStream
+    let randomStream = randomRs (0, width*height) gen 
+    game <- liftIO $ newIORef $ newGame width height randomStream difficulty
 
     -- Create UI elements
     title <- UI.h1 U.# U.set U.text "Bird Minesweeper"
@@ -39,7 +48,7 @@ setup window = do
         ]
         UI.# UI.set (UI.attr "class") "description"
     cover <- endGameCover
-    m <- startMap (10,10) game (UI.element cover)
+    m <- startMap (width,height) game (UI.element cover)
     button <- playButton (U.element m) game
     reset <- UI.button UI.# U.set U.text "Reset"
                             UI.#. "button"
@@ -54,7 +63,7 @@ setup window = do
     U.on UI.click reset $ \_ -> do
         gen' <- newStdGen
         let randomStream' = randomRs (0, 10*10) gen' 
-        liftIO $ writeIORef game (newGame 10 10 randomStream') 
+        liftIO $ writeIORef game (newGame 10 10 randomStream' difficulty) 
         U.runFunction $ U.ffi "document.getElementById('grid').click();"
 
 

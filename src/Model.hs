@@ -364,8 +364,8 @@ emptyMap :: Int -> Int -> Map
 emptyMap w h = replicate h (replicate w (Unflipped (Empty 0)))
 
 -- Taking in width, height, and a random generator, generate a list of positions for bombs/mines
-bombPositions :: Int -> Int -> [Int] -> [(Int,Int)]
-bombPositions w h gen = take (numBombs w h) (indexToXY gen)
+bombPositions :: Int -> Int -> [Int] -> Double -> [(Int,Int)]
+bombPositions w h gen difficulty = take (numBombs w h difficulty) (indexToXY gen)
                         where
                             -- randomRS creates a list of indices to the map as a whole
                             -- This function turns these indices into x,y coordinates on the map
@@ -375,8 +375,8 @@ bombPositions w h gen = take (numBombs w h) (indexToXY gen)
 
 -- Default difficulty is 13% bombs
 -- Take in the width and height, and return how many bombs should be placed
-numBombs :: Int -> Int -> Int
-numBombs w h = floor ((fromIntegral (w*h) * 0.13) :: Double)
+numBombs :: Int -> Int -> Double -> Int
+numBombs w h difficulty = floor ((fromIntegral (w*h) * difficulty) :: Double)
 
 -- Given a list of coordinates surrounding a bomb, increment the bomb count on each of them.
 -- Skip if it's another mine.
@@ -408,9 +408,9 @@ placeBombs m (b:bs) dimens = placeBombs m'' bs dimens
                                   m'' = nextToBomb m' b dimens
 
 -- Generate a new map of the given width and height
-newMap :: Int -> Int -> [Int] -> Map
-newMap w h g = placeBombs (emptyMap w h) (nub (bombPositions w h g)) (w,h)
+newMap :: Int -> Int -> [Int] -> Double -> Map
+newMap w h g difficulty = placeBombs (emptyMap w h) (nub (bombPositions w h g difficulty)) (w,h)
 
 -- Generate a new game
-newGame :: Int -> Int -> [Int] -> Game
-newGame w h g = (newMap w h g, Play)
+newGame :: Int -> Int -> [Int] -> Double -> Game
+newGame w h g difficulty = (newMap w h g difficulty, Play)
