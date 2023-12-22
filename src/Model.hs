@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 module Model
     (
         Square(..), Map, Game, GameState(..), newGame, flagSquare, flipSquare, getTile, getTileSafe,
@@ -19,8 +20,10 @@ type Game = (Map, GameState)
 --    - Apply 1-1 rule
 play :: Game -> Game
 play g = case findObviousBomb (0, 0) g of
-                Nothing -> applyPattern (0,0) g
                 Just c -> flagSquare c g
+                Nothing -> case findObviousEmpty (0,0) g of 
+                    Just c -> flipSquare c g 
+                    Nothing -> applyPattern (0,0) g  
 
 applyPattern :: (Int, Int) -> Game -> Game
 applyPattern (x,y) g
@@ -44,6 +47,14 @@ findObviousBomb (x,y) g
                             Just c -> Just c
   | isValidIndex g (0, y+1) = findObviousBomb (0, y+1) g
   | otherwise = Nothing
+
+findObviousEmpty :: (Int,Int) -> Game -> Maybe (Int,Int)
+findObviousEmpty (x,y) g 
+    | isValidIndex g (x,y) = case findEmptyAdjacentToTile(x,y) g of
+                                Nothing -> findObviousEmpty (x+1,y) g
+                                Just c -> Just c
+    | isValidIndex g (0,y+1) = findObviousEmpty (0, y+1) g
+    | otherwise = Nothing
 
 -- Takes in the map and coordinates of a square, and flags it.
 flagSquare :: (Int, Int) -> Game ->  Game
@@ -122,7 +133,24 @@ checkFlipGameCondition (m,g) (x,y)
       checkSquareCorrect (Revealed (Empty _)) = True -- An empty tile must be revealed for the game to be won.
       checkSquareCorrect _ = False -- Any other case means the game has not been won yet.
 
-{- Simplest bomb finding -}
+{- Simplest bomb/empty finding -}
+
+-- Given a tile in the grid
+--  - Check if it is a revealed empty tile (if not, return)
+--  - Store the number of bombs next to the tile (from its value) in adjacentBombs
+--  - Count the number of adjacent tiles which are flagged
+--  - If adjacentBombs == adjacentFlagged, then all of the unrevealed tiles are empty
+--  - Find an unflipped empty from the adjacent tiles, and return its index. 
+--  - If no empty is found, return Nothing
+findEmptyAdjacentToTile :: (Int,Int) -> Game -> Maybe (Int, Int)
+findEmptyAdjacentToTile c g = do
+                                adjacentBombs <- case getTile g c of
+                                                    Revealed (Empty x) -> Just x
+                                                    _ -> Nothing
+                                let adjacentFlagged = countAdjacentFlagged c g
+                                if adjacentBombs == adjacentFlagged 
+                                    then findUnflippedAdjacent (adjacentIndices c g) g
+                                    else Nothing
 
 -- Given a tile in the grid
 --  - Check if it is a revealed empty tile (if not, return)
@@ -139,15 +167,15 @@ findBombAdjacentToTile c g = do
                                                 _ -> Nothing
                                 let adjacentUnrev = countAdjecentUnrevealed c g
                                 if adjacentBombs == adjacentUnrev
-                                    then findBomb (adjacentIndices c g) g
+                                    then findUnflippedAdjacent (adjacentIndices c g) g
                                     else Nothing
 
 -- Given a list of tile indices
 --   where any unrevealed tiles are bombs,
 --   return one of any unflipped tile indices (ignoring flipped tiles)
-findBomb :: [(Int,Int)] -> Game -> Maybe (Int, Int)
-findBomb [] _ = Nothing
-findBomb (c:cs) g = if isUnflipped (getTile g c) then Just c else findBomb cs g
+findUnflippedAdjacent :: [(Int,Int)] -> Game -> Maybe (Int, Int)
+findUnflippedAdjacent [] _ = Nothing
+findUnflippedAdjacent (c:cs) g = if isUnflipped (getTile g c) then Just c else findUnflippedAdjacent cs g
 
 {- 1-1 pattern finding, for when there are two revealed Empty 1s next to each other against a wall:
     with | as a wall, [ ] as unrevealed, we can correctly reveal where [R] is shown
@@ -262,6 +290,14 @@ countAdjecentUnrevealed (x,y) g = sum $ map unrevealed (adjacentSquares (x,y) g)
                                         unrevealed :: Square -> Int
                                         unrevealed (Revealed _) = 0
                                         unrevealed _ = 1
+
+-- Given a tile index, count how many adjacent tiles are currently flagged
+countAdjacentFlagged :: (Int, Int) -> Game -> Int 
+countAdjacentFlagged (x,y) g = sum $ map flagged (adjacentSquares (x,y) g)
+                                    where
+                                        flagged :: Square -> Int
+                                        flagged (Flagged _) = 1
+                                        flagged _ = 0
 
 -- Given a tile index, return all adjacent squares.
 adjacentSquares :: (Int,Int) -> Game -> [Square]
