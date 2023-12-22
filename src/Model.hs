@@ -16,36 +16,50 @@ type Game = (Map, GameState)
 -- Play takes the current game and makes the best move possible
 -- Moves which have no downside:
 --    - Flag a mine which can only be in one location
+--    - Reveal a tile which can only be empty
 play :: Game -> Game
 play g = case findObviousBomb (0, 0) g of
                 Nothing -> flagSquare (0,0) g
                 Just c -> flagSquare c g
-            
 
-
+-- This is the equivalent of the basic patterns discussed in https://www.minesweeper.info/wiki/Strategy
+-- Loops through all of the tiles in the map, and if there are exactly as many unrevealed spots adjacent as mines predicted next to a revealed spot, 
+-- return one of those unflagged spots to flag.
+-- Looping through the grid is done by checking valid indices.
 findObviousBomb :: (Int,Int) -> Game -> Maybe (Int,Int)
 findObviousBomb (x,y) g
-  | isValidIndex (x,y) g = case findBombFromRevealed (x,y) g of
+  | isValidIndex g (x,y) = case findBombAdjacentToTile (x,y) g of
                             Nothing -> findObviousBomb (x+1,y) g
                             Just c -> Just c
-  | isValidIndex (0, y+1) g = findObviousBomb (0, y+1) g
+  | isValidIndex g (0, y+1) = findObviousBomb (0, y+1) g
   | otherwise = Nothing
 
-findBombFromRevealed :: (Int,Int) -> Game -> Maybe (Int,Int)
-findBombFromRevealed c g = do
+-- Given a tile in the grid
+--  - Check if it is a revealed empty tile (if not, return)
+--  - Store the number of bombs next to the tile (from its value) in adjacentBombs
+--  - Count the number of adjacent tiles which are unrevealed
+--  - If adjacentBombs == adjacentUnrevealed, then all of the unrevealed tiles are bombs
+--  - Find an unflagged bomb from the adjaacent tiles, and return its index. 
+--  - If no bomb is found (because they are all flagged), return Nothing
+findBombAdjacentToTile :: (Int,Int) -> Game -> Maybe (Int,Int)
+findBombAdjacentToTile c g = do
                                 adjacentBombs <- case getTile g c of
                                                 Revealed (Empty 0) -> Nothing
                                                 Revealed (Empty x) -> Just x
                                                 _ -> Nothing
-                                let adjacentEmpties = countAdjecentUnrevealed c g
-                                if adjacentBombs == adjacentEmpties
-                                    then findAdjacentBomb (adjacentIndices c g) g
+                                let adjacentUnrev = countAdjecentUnrevealed c g
+                                if adjacentBombs == adjacentUnrev
+                                    then findBomb (adjacentIndices c g) g
                                     else Nothing
 
-findAdjacentBomb :: [(Int,Int)] -> Game -> Maybe (Int, Int)
-findAdjacentBomb [] _ = Nothing
-findAdjacentBomb (c:cs) g = if isUnflipped (getTile g c) then Just c else findAdjacentBomb cs g
+-- Given a list of tile indices
+--   where any unrevealed tiles are bombs,
+--   return one of any unflipped tile indices (ignoring flipped tiles)
+findBomb :: [(Int,Int)] -> Game -> Maybe (Int, Int)
+findBomb [] _ = Nothing
+findBomb (c:cs) g = if isUnflipped (getTile g c) then Just c else findBomb cs g
 
+-- Given a tile index, count how many adjacent tiles are currently unrevealed
 countAdjecentUnrevealed :: (Int, Int) -> Game -> Int
 countAdjecentUnrevealed (x,y) g = sum $ map unrevealed (adjacentSquares (x,y) g)
                                     where
@@ -53,7 +67,15 @@ countAdjecentUnrevealed (x,y) g = sum $ map unrevealed (adjacentSquares (x,y) g)
                                         unrevealed (Revealed _) = 0
                                         unrevealed _ = 1
 
--- Takes in the map and coordinates of a square, and flags it
+-- Given a tile index, return all adjacent squares.
+adjacentSquares :: (Int,Int) -> Game -> [Square]
+adjacentSquares c g = map (getTile g) (adjacentIndices c g)
+
+-- Given a tile index, return all valid adjacent tile indices.
+adjacentIndices :: (Int,Int) -> Game -> [(Int,Int)]
+adjacentIndices (x,y) g = filter (isValidIndex g) [(x-1, y-1), (x, y-1), (x+1, y-1), (x-1, y), (x+1, y), (x-1, y+1), (x, y+1), (x+1, y+1)]
+
+-- Takes in the map and coordinates of a square, and flags it.
 flagSquare :: (Int, Int) -> Game ->  Game
 flagSquare (x,y) (m,g) = (replaceSquare m (changedSquare (getSquare m (x,y))) (x,y), g)
                          where
@@ -61,19 +83,6 @@ flagSquare (x,y) (m,g) = (replaceSquare m (changedSquare (getSquare m (x,y))) (x
                             changedSquare (Unflipped c) = Flagged c -- If the square is currently unflipped, flag it
                             changedSquare (Flagged c) = Unflipped c -- If the square is currently flagged, unflag it (unflipped)
                             changedSquare (Revealed c) = Revealed c -- If the square has already been flagged, do nothing
-
-adjacentSquares :: (Int,Int) -> Game -> [Square]
-adjacentSquares c g = map (getTile g) (adjacentIndices c g)
-
-
-adjacentIndices :: (Int,Int) -> Game -> [(Int,Int)]
-adjacentIndices (x,y) g = filter validCoords startAdjacent
-                            where
-                                validCoords :: (Int, Int) -> Bool
-                                validCoords (x',y') = case getTileSafe g (x',y')  of
-                                                        Nothing -> False
-                                                        _ -> True
-                                startAdjacent = [(x-1, y-1), (x, y-1), (x+1, y-1), (x-1, y), (x+1, y), (x-1, y+1), (x, y+1), (x+1, y+1)]
 
 -- Flip a set of tiles (if they are flippable).
 -- This is done as the set of tiles directly around an Empty 0 tile can always be flipped.
@@ -116,13 +125,13 @@ flipSquare (x,y) (m,g) = (m', checkFlipGameCondition (m',g) (x,y)) -- return the
 -- (The win condition check takes in the map with the given tile already flipped).
 checkFlipGameCondition :: Game -> (Int,Int) -> GameState
 checkFlipGameCondition (m,g) (x,y)
-  | checkFlipLoss (getSquareContents m (x,y)) = Lost
+  | checkFlipLoss (getSquare m (x,y)) = Lost
   | checkFlipWin m = Won
   | otherwise = g
   where
       -- This function checks if flipping a square will cause an explosion.
-      checkFlipLoss :: Contents -> Bool
-      checkFlipLoss Mine = True
+      checkFlipLoss :: Square -> Bool
+      checkFlipLoss (Revealed Mine) = True
       checkFlipLoss _ = False
 
       -- This function checks if (given a certain map), the game has been won.
@@ -144,8 +153,8 @@ checkFlipGameCondition (m,g) (x,y)
       checkSquareCorrect _ = False -- Any other case means the game has not been won yet.
 
 {- HELPER FUNCTIONS -}
-isValidIndex :: (Int,Int) -> Game -> Bool
-isValidIndex c g = case getTileSafe g c of
+isValidIndex :: Game -> (Int,Int) -> Bool
+isValidIndex g c = case getTileSafe g c of
                         Nothing -> False
                         _ -> True
 
